@@ -1,6 +1,8 @@
 package borg.ed.sidepanel.gui;
 
+import borg.ed.sidepanel.SidepanelApplication;
 import borg.ed.sidepanel.commander.CommanderData;
+import borg.ed.sidepanel.commander.OtherCommanderLocation;
 import borg.ed.universe.data.Coord;
 import borg.ed.universe.eddn.EddnReaderThread;
 import borg.ed.universe.eddn.EddnUpdateListener;
@@ -9,6 +11,7 @@ import borg.ed.universe.journal.JournalUpdateListener;
 import borg.ed.universe.journal.events.AbstractJournalEvent;
 import borg.ed.universe.journal.events.FSDJumpEvent;
 import borg.ed.universe.journal.events.ScanEvent;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -19,6 +22,9 @@ import java.awt.HeadlessException;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.time.ZonedDateTime;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -39,6 +45,7 @@ public class SidePanelFrame extends JFrame implements WindowListener, JournalUpd
     private final JournalReaderThread journalReaderThread;
     private final EddnReaderThread eddnReaderThread;
     private final CommanderData commanderData;
+    private final Map<String, OtherCommanderLocation> otherCommanders;
 
     private final ExecutorService delayedEsUpdateThreadPool = Executors.newFixedThreadPool(1);
 
@@ -46,15 +53,16 @@ public class SidePanelFrame extends JFrame implements WindowListener, JournalUpd
     private DiscoveryPanel discoveryPanel = null;
     private JTabbedPane tabbedPane = null;
 
-    public SidePanelFrame(String title, ApplicationContext appctx, CommanderData commanderData) throws HeadlessException {
+    public SidePanelFrame(String title, ApplicationContext appctx, CommanderData commanderData, Map<String, OtherCommanderLocation> otherCommanders) throws HeadlessException {
         super(title);
 
         this.journalReaderThread = appctx.getBean(JournalReaderThread.class);
         this.eddnReaderThread = appctx.getBean(EddnReaderThread.class);
         this.commanderData = commanderData;
+        this.otherCommanders = otherCommanders;
 
         this.statusPanel = new StatusPanel();
-        this.discoveryPanel = new DiscoveryPanel(appctx, commanderData);
+        this.discoveryPanel = new DiscoveryPanel(appctx, commanderData, otherCommanders);
         this.tabbedPane = new JTabbedPane();
         this.tabbedPane.setFont(new Font("Sans Serif", Font.BOLD, 18));
         this.tabbedPane.addTab("Discovery", this.discoveryPanel);
@@ -136,15 +144,45 @@ public class SidePanelFrame extends JFrame implements WindowListener, JournalUpd
             Coord eventCoord = null;
 
             if (event instanceof FSDJumpEvent) {
-                eventCoord = ((FSDJumpEvent) event).getStarPos();
+                FSDJumpEvent fsdJumpEvent = (FSDJumpEvent) event;
+                eventCoord = fsdJumpEvent.getStarPos();
+                this.updateOtherCommanders(uploaderID, event.getTimestamp(), fsdJumpEvent.getStarPos(), fsdJumpEvent.getStarSystem());
             } else if (event instanceof ScanEvent) {
-                eventCoord = ((ScanEvent) event).getStarPos();
+                ScanEvent scanEvent = (ScanEvent) event;
+                eventCoord = scanEvent.getStarPos();
+                this.updateOtherCommanders(uploaderID, event.getTimestamp(), scanEvent.getStarPos(), scanEvent.getStarSystem());
             }
 
             if (currentCoord != null && eventCoord != null && currentCoord.distanceTo(eventCoord) <= 1000) {
                 logger.info("Event at " + eventCoord + " -- Ly distance: " + currentCoord.distanceTo(eventCoord));
                 this.updateDiscoveryPanel();
             }
+        }
+    }
+
+    private void updateOtherCommanders(String commanderName, ZonedDateTime timestamp, Coord coord, String starSystemName) {
+        try {
+            if (StringUtils.isNotEmpty(commanderName) && !SidepanelApplication.MY_COMMANDER_NAME.equals(commanderName)) {
+                OtherCommanderLocation location = new OtherCommanderLocation();
+                location.setCommanderName(commanderName);
+                location.setStarSystemName(starSystemName);
+                location.setCoord(coord);
+                location.setTimestamp(timestamp);
+                this.otherCommanders.put(commanderName, location);
+
+                Set<String> entriesToRemove = new HashSet<>();
+                ZonedDateTime halfHourAgo = ZonedDateTime.now().minusMinutes(30);
+                for (String name : this.otherCommanders.keySet()) {
+                    if (this.otherCommanders.get(name).getTimestamp().isBefore(halfHourAgo)) {
+                        entriesToRemove.add(name);
+                    }
+                }
+                if (!entriesToRemove.isEmpty()) {
+                    this.otherCommanders.keySet().removeAll(entriesToRemove);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Failed to update DiscoveryPanel", e);
         }
     }
 

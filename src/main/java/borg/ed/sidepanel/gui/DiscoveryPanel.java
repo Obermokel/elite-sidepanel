@@ -1,6 +1,7 @@
 package borg.ed.sidepanel.gui;
 
 import borg.ed.sidepanel.commander.CommanderData;
+import borg.ed.sidepanel.commander.OtherCommanderLocation;
 import borg.ed.universe.constants.PlanetClass;
 import borg.ed.universe.constants.StarClass;
 import borg.ed.universe.constants.TerraformingState;
@@ -32,6 +33,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -53,6 +55,7 @@ public class DiscoveryPanel extends JPanel {
     static final Logger logger = LoggerFactory.getLogger(DiscoveryPanel.class);
 
     private final CommanderData commanderData;
+    private final Map<String, OtherCommanderLocation> otherCommanders;
 
     private UniverseService universeService = null;
 
@@ -60,8 +63,9 @@ public class DiscoveryPanel extends JPanel {
     private JTextArea txtClosestValuableSystems = new JTextArea(10, 40);
     private Area area = null;
 
-    public DiscoveryPanel(ApplicationContext appctx, CommanderData commanderData) {
+    public DiscoveryPanel(ApplicationContext appctx, CommanderData commanderData, Map<String, OtherCommanderLocation> otherCommanders) {
         this.commanderData = commanderData;
+        this.otherCommanders = otherCommanders;
 
         this.universeService = appctx.getBean(UniverseService.class);
 
@@ -83,7 +87,7 @@ public class DiscoveryPanel extends JPanel {
         dummyPanel.add(new JLabel(""), BorderLayout.CENTER);
         this.add(dummyPanel, BorderLayout.WEST);
 
-        this.area = new Area(appctx, commanderData);
+        this.area = new Area(appctx, commanderData, otherCommanders);
         this.add(this.area, BorderLayout.CENTER);
     }
 
@@ -210,6 +214,7 @@ public class DiscoveryPanel extends JPanel {
         private static final long serialVersionUID = 8383226308842901529L;
 
         private final CommanderData commanderData;
+        private final Map<String, OtherCommanderLocation> otherCommanders;
 
         private UniverseService universeService = null;
 
@@ -223,8 +228,9 @@ public class DiscoveryPanel extends JPanel {
         private float zfrom = 0f - zsize;
         private float zto = 0f + zsize;
 
-        public Area(ApplicationContext appctx, CommanderData commanderData) {
+        public Area(ApplicationContext appctx, CommanderData commanderData, Map<String, OtherCommanderLocation> otherCommanders) {
             this.commanderData = commanderData;
+            this.otherCommanders = otherCommanders;
 
             this.universeService = appctx.getBean(UniverseService.class);
         }
@@ -268,6 +274,15 @@ public class DiscoveryPanel extends JPanel {
             int poffset = (psize - 1) / 2;
             //            this.universeService this.universeService = this.appctx.getBean(EddbService.class);
             //
+
+            g.setColor(Color.CYAN);
+            g.setFont(new Font("Sans Serif", Font.PLAIN, 12));
+            for (OtherCommanderLocation location : this.otherCommanders.values()) {
+                Point p = this.coordToPoint(location.getCoord());
+                g.fillRect(p.x - poffset, p.y - poffset, psize, psize);
+                g.drawString(location.getCommanderName(), p.x, p.y);
+            }
+
             Page<StarSystem> systems = this.universeService.findSystemsWithin(xfrom, xto, yfrom, yto, zfrom, zto, new PageRequest(0, 10000));
             logger.debug("Found " + systems.getTotalElements() + " system(s)");
             for (StarSystem system : systems.getContent()) {
@@ -292,74 +307,6 @@ public class DiscoveryPanel extends JPanel {
                     g.fillRect(p.x - 1, p.y - 1, 3, 3);
                 }
             }
-            //
-            //            for (int i = this.travelHistory.getVisitedSystems().size() - 1; i >= 0 && i >= this.travelHistory.getVisitedSystems().size() - 1000; i--) {
-            //                VisitedSystem visitedSystem = this.travelHistory.getVisitedSystems().get(i);
-            //
-            //                Point p = this.coordToPoint(visitedSystem.getCoord());
-            //                float dy = Math.abs(visitedSystem.getCoord().getY() - coord.getY());
-            //                if (dy <= (ysize / 2)) {
-            //                    int alpha = 255 - Math.round((dy / (ysize / 2)) * 255);
-            //
-            //                    g.setColor(new Color(80, 80, 80, alpha));
-            //                    g.fillRect(p.x - 1, p.y - 1, 3, 3);
-            //
-            //                    for (ScannedBody scannedBody : visitedSystem.getScannedBodies()) {
-            //                        if (scannedBody.getDistanceFromArrivalLS() != null && scannedBody.getDistanceFromArrivalLS().floatValue() == 0f) {
-            //                            alpha = 255 - Math.round((dy / (ysize / 2)) * 127);
-            //
-            //                            Color color = StarUtil.spectralClassToColor(scannedBody.getStarClass());
-            //                            g.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), alpha));
-            //                            g.fillRect(p.x - 1, p.y - 1, 3, 3);
-            //                            break;
-            //                        }
-            //                    }
-            //                }
-            //            }
-            //
-            //            // Me
-            //            g.setColor(Color.RED); // Unknown on EDDB
-            //            try {
-            //                StarSystem system = this.universeService.findSystemByName(this.travelHistory.getSystemName());
-            //                if (system != null) {
-            //                    g.setColor(Color.ORANGE); // Coords known on EDDB
-            //                    List<Body> bodies = this.universeService.findBodiesOfSystem(system.getId());
-            //                    for (Body body : bodies) {
-            //                        if (Boolean.TRUE.equals(body.getIsMainStar())) {
-            //                            if (StringUtils.isNotEmpty(body.getStarClass())) {
-            //                                g.setColor(Color.GREEN); // Main star spectral class known on EDDB
-            //                            }
-            //                            break;
-            //                        }
-            //                    }
-            //                }
-            //            } catch (BeansException e) {
-            //                logger.error("Failed to find current system '" + this.travelHistory.getSystemName() + "'", e);
-            //            }
-            //            if (!g.getColor().equals(Color.GREEN)) {
-            //                for (int i = this.travelHistory.getVisitedSystems().size() - 1; !g.getColor().equals(Color.GREEN) && i >= 0 && i >= this.travelHistory.getVisitedSystems().size() - 1000; i--) {
-            //                    VisitedSystem visitedSystem = this.travelHistory.getVisitedSystems().get(i);
-            //                    if (visitedSystem.getCoord().distanceTo(coord) <= 0.01f) {
-            //                        for (ScannedBody scannedBody : visitedSystem.getScannedBodies()) {
-            //                            if (scannedBody.getDistanceFromArrivalLS() != null && scannedBody.getDistanceFromArrivalLS().floatValue() == 0f) {
-            //                                g.setColor(Color.GREEN);
-            //                                break;
-            //                            }
-            //                        }
-            //                        break;
-            //                    }
-            //                }
-            //            }
-            //            Point p = this.coordToPoint(coord);
-            //            g.fillRect(p.x - poffset, p.y - poffset, psize, psize);
-            //
-            //            g.setColor(Color.CYAN);
-            //            g.setFont(new Font("Sans Serif", Font.PLAIN, 12));
-            //            for (String commanderName : this.commanderLocations.keySet()) {
-            //                p = this.coordToPoint(this.commanderLocations.get(commanderName));
-            //                g.fillRect(p.x - poffset, p.y - poffset, psize, psize);
-            //                g.drawString(commanderName, p.x, p.y);
-            //            }
         }
 
         private Point coordToPoint(Coord coord) {
