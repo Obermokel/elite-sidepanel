@@ -258,7 +258,7 @@ public class DiscoveryPanel extends JPanel {
 				return;
 			}
 
-			zsize = 2 * 100f;
+			zsize = 2 * 200f;
 			zfrom = coord.getZ() - zsize / 2;
 			zto = coord.getZ() + zsize / 2;
 			xsize = ((float) this.getWidth() / (float) this.getHeight()) * zsize;
