@@ -142,23 +142,27 @@ public class SidePanelFrame extends JFrame implements WindowListener, JournalUpd
             }
 
             if (currentCoord != null && eventCoord != null && currentCoord.distanceTo(eventCoord) <= 1000) {
-                try {
-                    logger.info("Event at " + eventCoord + " -- Ly distance: " + currentCoord.distanceTo(eventCoord));
-                    this.delayedEsUpdateThreadPool.execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                Thread.sleep(2500L);
-                                SidePanelFrame.this.discoveryPanel.updateFromElasticsearch();
-                            } catch (InterruptedException e) {
-                                // Quit
-                            }
-                        }
-                    });
-                } catch (Exception e) {
-                    logger.error("Failed to update DiscoveryPanel", e);
-                }
+                logger.info("Event at " + eventCoord + " -- Ly distance: " + currentCoord.distanceTo(eventCoord));
+                this.updateDiscoveryPanel();
             }
+        }
+    }
+
+    private void updateDiscoveryPanel() {
+        try {
+            this.delayedEsUpdateThreadPool.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Thread.sleep(2500L);
+                        SidePanelFrame.this.discoveryPanel.updateFromElasticsearch();
+                    } catch (InterruptedException e) {
+                        // Quit
+                    }
+                }
+            });
+        } catch (Exception e) {
+            logger.error("Failed to update DiscoveryPanel", e);
         }
     }
 
