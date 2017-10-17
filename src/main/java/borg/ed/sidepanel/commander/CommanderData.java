@@ -5,11 +5,14 @@ import borg.ed.universe.journal.events.AbstractJournalEvent;
 import borg.ed.universe.journal.events.FSDJumpEvent;
 import borg.ed.universe.journal.events.FSDJumpEvent.Faction;
 import borg.ed.universe.journal.events.LoadoutEvent;
+import borg.ed.universe.journal.events.ScanEvent;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.LinkedList;
 
 /**
  * CommanderData
@@ -42,9 +45,15 @@ public class CommanderData {
 
     private Ship currentShip = null;
 
+    private LinkedList<VisitedStarSystem> visitedStarSystems = new LinkedList<>();
+
+    private LinkedList<ScannedBody> scannedBodies = new LinkedList<>();
+
     public void updateFromJournalEvent(AbstractJournalEvent event) {
         if (event instanceof FSDJumpEvent) {
             this.updateFromFsdJumpEvent((FSDJumpEvent) event);
+        } else if (event instanceof ScanEvent) {
+            this.updateFromScanEvent((ScanEvent) event);
         } else if (event instanceof LoadoutEvent) {
             this.updateFromLoadoutEvent((LoadoutEvent) event);
         }
@@ -68,6 +77,19 @@ public class CommanderData {
         }
         this.setSystemGovernment(event.getSystemGovernment());
         this.setSystemSecurity(event.getSystemSecurity());
+
+        VisitedStarSystem visitedStarSystem = new VisitedStarSystem();
+        visitedStarSystem.setName(event.getStarSystem());
+        visitedStarSystem.setCoord(event.getStarPos());
+        visitedStarSystem.setTimestamp(event.getTimestamp());
+        this.getVisitedStarSystems().addLast(visitedStarSystem);
+    }
+
+    private void updateFromScanEvent(ScanEvent event) {
+        ScannedBody scannedBody = new ScannedBody();
+        scannedBody.setName(event.getBodyName());
+        scannedBody.setTimestamp(event.getTimestamp());
+        this.getScannedBodies().addLast(scannedBody);
     }
 
     private void updateFromLoadoutEvent(LoadoutEvent event) {

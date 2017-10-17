@@ -2,6 +2,7 @@ package borg.ed.sidepanel.gui;
 
 import borg.ed.sidepanel.commander.CommanderData;
 import borg.ed.sidepanel.commander.OtherCommanderLocation;
+import borg.ed.sidepanel.commander.VisitedStarSystem;
 import borg.ed.universe.constants.PlanetClass;
 import borg.ed.universe.constants.StarClass;
 import borg.ed.universe.constants.TerraformingState;
@@ -252,29 +253,40 @@ public class DiscoveryPanel extends JPanel {
                 return;
             }
 
-            //zsize = ((float) this.getHeight() / (float) this.getWidth()) * xsize;
             zsize = 2 * 100f;
             zfrom = coord.getZ() - zsize / 2;
             zto = coord.getZ() + zsize / 2;
-            //xsize = 2 * 160f;
             xsize = ((float) this.getWidth() / (float) this.getHeight()) * zsize;
             xfrom = coord.getX() - xsize / 2;
             xto = coord.getX() + xsize / 2;
-            //ysize = xsize / 4;
-            //ysize = zsize / 4;
             ysize = Math.min(xsize, zsize);
             yfrom = coord.getY() - ysize / 2;
             yto = coord.getY() + ysize / 2;
-            //            StarSystemRepository systemRepo = this.appctx.getBean(StarSystemRepository.class);
-            //            BodyRepository bodyRepo = this.appctx.getBean(BodyRepository.class);
             int psize = Math.round(this.getWidth() / 150f);
             if (psize % 2 == 0) {
                 psize++;
             }
             int poffset = (psize - 1) / 2;
-            //            this.universeService this.universeService = this.appctx.getBean(EddbService.class);
-            //
 
+            // My travel history
+            if (this.commanderData.getVisitedStarSystems().size() >= 2) {
+                int toIndex = this.commanderData.getVisitedStarSystems().size();
+                int fromIndex = Math.max(0, toIndex - 20);
+                int alpha = 0;
+                Point prev = null;
+                for (int idx = fromIndex; idx < toIndex; idx++) {
+                    VisitedStarSystem visitedStarSystem = this.commanderData.getVisitedStarSystems().get(idx);
+                    Point curr = this.coordToPoint(visitedStarSystem.getCoord());
+                    if (prev != null) {
+                        alpha += 10;
+                        g.setColor(new Color(80, 80, 80, alpha));
+                        g.drawLine(prev.x, prev.y, curr.x, curr.y);
+                    }
+                    prev = curr;
+                }
+            }
+
+            // Other commanders
             g.setColor(Color.CYAN);
             g.setFont(new Font("Sans Serif", Font.PLAIN, 12));
             for (OtherCommanderLocation location : this.otherCommanders.values()) {
@@ -283,6 +295,7 @@ public class DiscoveryPanel extends JPanel {
                 g.drawString(location.getCommanderName(), p.x, p.y);
             }
 
+            // Known systems
             Page<StarSystem> systems = this.universeService.findSystemsWithin(xfrom, xto, yfrom, yto, zfrom, zto, new PageRequest(0, 10000));
             logger.debug("Found " + systems.getTotalElements() + " system(s)");
             for (StarSystem system : systems.getContent()) {
@@ -294,6 +307,7 @@ public class DiscoveryPanel extends JPanel {
                 g.fillRect(p.x - 1, p.y - 1, 3, 3);
             }
 
+            // Known entry stars
             Page<Body> mainStars = this.universeService.findStarsWithin(xfrom, xto, yfrom, yto, zfrom, zto, /* isMainStar = */ Boolean.TRUE, /* starClasses = */ null, new PageRequest(0, 10000));
             logger.debug("Found " + mainStars.getTotalElements() + " main star(s) with known spectral class");
             for (Body mainStar : mainStars.getContent()) {
