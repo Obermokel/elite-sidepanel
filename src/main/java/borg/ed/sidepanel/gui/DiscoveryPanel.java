@@ -280,6 +280,7 @@ public class DiscoveryPanel extends JPanel {
             }
 
             Page<Body> mainStars = this.universeService.findStarsWithin(xfrom, xto, yfrom, yto, zfrom, zto, /* isMainStar = */ Boolean.TRUE, /* starClasses = */ null, new PageRequest(0, 10000));
+            logger.debug("Found " + mainStars.getTotalElements() + " main star(s) with known spectral class");
             for (Body mainStar : mainStars.getContent()) {
                 if (mainStar.getStarClass() != null) {
                     Point p = this.coordToPoint(mainStar.getCoord());
