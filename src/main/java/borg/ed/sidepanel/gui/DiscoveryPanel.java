@@ -1,10 +1,12 @@
 package borg.ed.sidepanel.gui;
 
+import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -258,7 +260,7 @@ public class DiscoveryPanel extends JPanel {
 				return;
 			}
 
-			zsize = 2 * 200f;
+			zsize = 2 * 500f;
 			zfrom = coord.getZ() - zsize / 2;
 			zto = coord.getZ() + zsize / 2;
 			xsize = ((float) this.getWidth() / (float) this.getHeight()) * zsize;
@@ -276,14 +278,15 @@ public class DiscoveryPanel extends JPanel {
 			// My travel history
 			if (this.commanderData.getVisitedStarSystems().size() >= 2) {
 				int toIndex = this.commanderData.getVisitedStarSystems().size();
-				int fromIndex = Math.max(0, toIndex - 20);
+				int fromIndex = Math.max(0, toIndex - 32);
 				int alpha = 0;
 				Point prev = null;
 				for (int idx = fromIndex; idx < toIndex; idx++) {
 					VisitedStarSystem visitedStarSystem = this.commanderData.getVisitedStarSystems().get(idx);
 					Point curr = this.coordToPoint(visitedStarSystem.getCoord());
 					if (prev != null) {
-						alpha += 10;
+						alpha += 8;
+						((Graphics2D) g).setStroke(new BasicStroke(3));
 						g.setColor(new Color(80, 80, 80, alpha));
 						g.drawLine(prev.x, prev.y, curr.x, curr.y);
 					}
