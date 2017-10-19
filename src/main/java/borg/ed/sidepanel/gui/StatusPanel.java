@@ -205,17 +205,6 @@ public class StatusPanel extends JPanel {
         //        float currentJumpRange = FuelAndJumpRangeLookup.estimateCurrentJumpRange(totalFuel, (int) capacityFuel, maxFuelPerJump, minJumpRange, maxJumpRange);
         //        currentJumpRange *= this.travelHistory.getBoostLevel();
         //        this.jumpLabel.setText(String.format(Locale.US, "Jump: %.2f Ly", currentJumpRange));
-        //        int explPayout = this.travelHistory.estimateRemainingExplorationPayout();
-        //        this.explLabel.setText(String.format(Locale.US, "Expl: %,d CR", explPayout));
-        //        if (explPayout >= 1000000) {
-        //            this.explLabel.setForeground(Color.RED);
-        //        } else if (explPayout >= 250000) {
-        //            this.explLabel.setForeground(Color.ORANGE);
-        //        } else if (explPayout > 0) {
-        //            this.explLabel.setForeground(Color.LIGHT_GRAY);
-        //        } else {
-        //            this.explLabel.setForeground(Color.GRAY);
-        //        }
     }
 
     public static class AnimatedLabel extends JLabel implements ActionListener {
@@ -308,6 +297,18 @@ public class StatusPanel extends JPanel {
 
             if (commanderData.getCurrentCoord() != null) {
                 this.distanceFromSolLabel.setText(String.format(Locale.US, "Sol: %.0f Ly", new Coord(0, 0, 0).distanceTo(commanderData.getCurrentCoord())));
+            }
+
+            long explPayout = commanderData.estimateRemainingExplorationPayout();
+            this.explLabel.setText(String.format(Locale.US, "Expl: %,d CR", explPayout));
+            if (explPayout >= 10_000_000) {
+                this.explLabel.setForeground(Color.RED);
+            } else if (explPayout >= 2_500_000) {
+                this.explLabel.setForeground(Color.ORANGE);
+            } else if (explPayout > 0) {
+                this.explLabel.setForeground(Color.LIGHT_GRAY);
+            } else {
+                this.explLabel.setForeground(Color.GRAY);
             }
         } catch (Exception e) {
             logger.error("Failed to update " + this, e);

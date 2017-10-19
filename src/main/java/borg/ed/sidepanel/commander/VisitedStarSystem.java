@@ -28,4 +28,6 @@ public class VisitedStarSystem implements Serializable {
 
     private ZonedDateTime timestamp = null;
 
+    private boolean payedOut = false;
+
 }

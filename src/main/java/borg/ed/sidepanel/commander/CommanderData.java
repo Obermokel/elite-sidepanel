@@ -1,13 +1,19 @@
 package borg.ed.sidepanel.commander;
 
+import borg.ed.universe.constants.PlanetClass;
+import borg.ed.universe.constants.StarClass;
+import borg.ed.universe.constants.TerraformingState;
 import borg.ed.universe.data.Coord;
 import borg.ed.universe.journal.JournalEventReader;
 import borg.ed.universe.journal.events.AbstractJournalEvent;
+import borg.ed.universe.journal.events.DiedEvent;
 import borg.ed.universe.journal.events.FSDJumpEvent;
 import borg.ed.universe.journal.events.FSDJumpEvent.Faction;
 import borg.ed.universe.journal.events.LoadGameEvent;
 import borg.ed.universe.journal.events.LoadoutEvent;
 import borg.ed.universe.journal.events.ScanEvent;
+import borg.ed.universe.journal.events.SellExplorationDataEvent;
+import borg.ed.universe.util.BodyUtil;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.io.FileUtils;
@@ -130,6 +136,10 @@ public class CommanderData {
             this.updateFromLoadGameEvent((LoadGameEvent) event);
         } else if (event instanceof LoadoutEvent) {
             this.updateFromLoadoutEvent((LoadoutEvent) event);
+        } else if (event instanceof SellExplorationDataEvent) {
+            this.updateFromSellExplorationDataEvent((SellExplorationDataEvent) event);
+        } else if (event instanceof DiedEvent) {
+            this.updateFromDiedEvent((DiedEvent) event);
         }
     }
 
@@ -162,12 +172,20 @@ public class CommanderData {
     private void updateFromScanEvent(ScanEvent event) {
         ScannedBody scannedBody = new ScannedBody();
         scannedBody.setName(event.getBodyName());
+        scannedBody.setStarClass(StarClass.fromJournalValue(event.getStarType()));
+        scannedBody.setPlanetClass(PlanetClass.fromJournalValue(event.getPlanetClass()));
+        scannedBody.setTerraformable(TerraformingState.TERRAFORMABLE.equals(TerraformingState.fromJournalValue(event.getTerraformState())));
         scannedBody.setTimestamp(event.getTimestamp());
         this.getScannedBodies().addLast(scannedBody);
     }
 
     private void updateFromLoadGameEvent(LoadGameEvent event) {
-        // TODO Auto-generated method stub
+        Ship currentShip = new Ship();
+        currentShip.setId(event.getShipID());
+        currentShip.setType(event.getShip());
+        currentShip.setIdent(event.getShipIdent());
+        currentShip.setName(event.getShipName());
+        this.setCurrentShip(currentShip);
     }
 
     private void updateFromLoadoutEvent(LoadoutEvent event) {
@@ -177,6 +195,39 @@ public class CommanderData {
         currentShip.setIdent(event.getShipIdent());
         currentShip.setName(event.getShipName());
         this.setCurrentShip(currentShip);
+    }
+
+    private void updateFromSellExplorationDataEvent(SellExplorationDataEvent event) {
+        for (VisitedStarSystem ss : this.getVisitedStarSystems()) {
+            ss.setPayedOut(true);
+        }
+        for (ScannedBody b : this.getScannedBodies()) {
+            b.setPayedOut(true);
+        }
+    }
+
+    private void updateFromDiedEvent(DiedEvent event) {
+        for (VisitedStarSystem ss : this.getVisitedStarSystems()) {
+            ss.setPayedOut(true);
+        }
+        for (ScannedBody b : this.getScannedBodies()) {
+            b.setPayedOut(true);
+        }
+    }
+
+    public long estimateRemainingExplorationPayout() {
+        long result = 0L;
+        for (VisitedStarSystem ss : this.getVisitedStarSystems()) {
+            if (!ss.isPayedOut()) {
+                result += 10_000;
+            }
+        }
+        for (ScannedBody b : this.getScannedBodies()) {
+            if (!b.isPayedOut()) {
+                result += BodyUtil.estimatePayout(b.getStarClass(), b.getPlanetClass(), b.isTerraformable());
+            }
+        }
+        return result;
     }
 
 }

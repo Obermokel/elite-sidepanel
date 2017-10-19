@@ -1,5 +1,7 @@
 package borg.ed.sidepanel.commander;
 
+import borg.ed.universe.constants.PlanetClass;
+import borg.ed.universe.constants.StarClass;
 import lombok.Getter;
 import lombok.Setter;
 import org.slf4j.Logger;
@@ -23,6 +25,14 @@ public class ScannedBody implements Serializable {
 
     private String name = null;
 
+    private StarClass starClass = null;
+
+    private PlanetClass planetClass = null;
+
+    private boolean terraformable = false;
+
     private ZonedDateTime timestamp = null;
+
+    private boolean payedOut = false;
 
 }
