@@ -86,7 +86,7 @@ public class SidePanelFrame extends JFrame implements WindowListener, JournalUpd
         //		this.eddnReaderThread.start();
 
         this.statusPanel.updateFromCommanderData(this.commanderData);
-        this.discoveryPanel.updateFromElasticsearch(false);
+        this.discoveryPanel.updateFromElasticsearch();
     }
 
     @Override
@@ -140,6 +140,10 @@ public class SidePanelFrame extends JFrame implements WindowListener, JournalUpd
         this.commanderData.updateFromJournalEvent(event);
 
         this.statusPanel.updateFromCommanderData(this.commanderData);
+
+        if (event instanceof FSDJumpEvent) {
+            this.discoveryPanel.updateFromElasticsearch();
+        }
     }
 
     @Override
@@ -152,10 +156,6 @@ public class SidePanelFrame extends JFrame implements WindowListener, JournalUpd
                 FSDJumpEvent fsdJumpEvent = (FSDJumpEvent) event;
                 eventCoord = fsdJumpEvent.getStarPos();
                 this.updateOtherCommanders(uploaderID, event.getTimestamp(), fsdJumpEvent.getStarPos(), fsdJumpEvent.getStarSystem());
-                if (SidepanelApplication.MY_COMMANDER_NAME.equals(uploaderID)) {
-                    this.commanderData.updateFromJournalEvent(event);
-                    this.statusPanel.updateFromCommanderData(this.commanderData);
-                }
             } else if (event instanceof ScanEvent) {
                 ScanEvent scanEvent = (ScanEvent) event;
                 eventCoord = scanEvent.getStarPos();
@@ -209,9 +209,8 @@ public class SidePanelFrame extends JFrame implements WindowListener, JournalUpd
                 @Override
                 public void run() {
                     try {
-                        SidePanelFrame.this.discoveryPanel.updateFromElasticsearch(true);
                         Thread.sleep(5000L);
-                        SidePanelFrame.this.discoveryPanel.updateFromElasticsearch(false);
+                        SidePanelFrame.this.discoveryPanel.updateFromElasticsearch();
                     } catch (InterruptedException e) {
                         // Quit
                     }
