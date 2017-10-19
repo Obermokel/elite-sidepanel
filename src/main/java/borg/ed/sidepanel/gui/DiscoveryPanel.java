@@ -110,7 +110,7 @@ public class DiscoveryPanel extends JPanel {
         this.add(this.area, BorderLayout.CENTER);
     }
 
-    public void updateFromElasticsearch() {
+    public void updateFromElasticsearch(boolean repaintMap) {
         final Coord coord = this.commanderData.getCurrentCoord();
         if (coord == null) {
             return;
@@ -162,7 +162,9 @@ public class DiscoveryPanel extends JPanel {
         }
         this.txtClosestJumponiumBodies.setText(jumponiumBodiesText.toString().trim());
 
-        this.area.updateFromElasticsearch();
+        if (repaintMap) {
+            this.area.updateFromElasticsearch();
+        }
     }
 
     private List<Body> findNearbyNeutronStars(final Coord coord, final float range) {

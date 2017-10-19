@@ -86,7 +86,7 @@ public class SidePanelFrame extends JFrame implements WindowListener, JournalUpd
         //		this.eddnReaderThread.start();
 
         this.statusPanel.updateFromCommanderData(this.commanderData);
-        this.discoveryPanel.updateFromElasticsearch();
+        this.discoveryPanel.updateFromElasticsearch(/* repaintMap = */ true);
     }
 
     @Override
@@ -142,7 +142,7 @@ public class SidePanelFrame extends JFrame implements WindowListener, JournalUpd
         this.statusPanel.updateFromCommanderData(this.commanderData);
 
         if (event instanceof FSDJumpEvent) {
-            this.discoveryPanel.updateFromElasticsearch();
+            this.discoveryPanel.updateFromElasticsearch(/* repaintMap = */ true);
         }
     }
 
@@ -172,7 +172,7 @@ public class SidePanelFrame extends JFrame implements WindowListener, JournalUpd
 
             if (currentCoord != null && eventCoord != null && currentCoord.distanceTo(eventCoord) <= 1000) {
                 logger.info("Event at " + eventCoord + " -- Ly distance: " + currentCoord.distanceTo(eventCoord));
-                this.updateDiscoveryPanel();
+                this.updateDiscoveryPanelDelayed();
             }
         }
     }
@@ -203,14 +203,14 @@ public class SidePanelFrame extends JFrame implements WindowListener, JournalUpd
         }
     }
 
-    private void updateDiscoveryPanel() {
+    private void updateDiscoveryPanelDelayed() {
         try {
             this.delayedEsUpdateThreadPool.execute(new Runnable() {
                 @Override
                 public void run() {
                     try {
                         Thread.sleep(5000L);
-                        SidePanelFrame.this.discoveryPanel.updateFromElasticsearch();
+                        SidePanelFrame.this.discoveryPanel.updateFromElasticsearch(/* repaintMap = */ false);
                     } catch (InterruptedException e) {
                         // Quit
                     }
