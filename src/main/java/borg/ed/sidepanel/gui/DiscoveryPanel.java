@@ -21,13 +21,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.util.CloseableIterator;
 
-import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.Point;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -60,7 +59,6 @@ public class DiscoveryPanel extends JPanel {
     static final Logger logger = LoggerFactory.getLogger(DiscoveryPanel.class);
 
     private final CommanderData commanderData;
-    private final Map<String, OtherCommanderLocation> otherCommanders;
 
     private UniverseService universeService = null;
 
@@ -73,7 +71,6 @@ public class DiscoveryPanel extends JPanel {
 
     public DiscoveryPanel(ApplicationContext appctx, CommanderData commanderData, Map<String, OtherCommanderLocation> otherCommanders) {
         this.commanderData = commanderData;
-        this.otherCommanders = otherCommanders;
 
         this.universeService = appctx.getBean(UniverseService.class);
 
@@ -174,18 +171,12 @@ public class DiscoveryPanel extends JPanel {
         List<Body> result = new ArrayList<>();
 
         try {
-            Page<Body> page = this.universeService.findStarsNear(coord, range, /* isMainStar = */ Boolean.TRUE, Arrays.asList(StarClass.N), PageRequest.of(0, 100));
-            while (page != null) {
-                for (Body body : page.getContent()) {
-                    if (!result.contains(body)) {
+            try (CloseableIterator<Body> stream = this.universeService.streamStarsNear(coord, range, /* isMainStar = */ Boolean.TRUE, Arrays.asList(StarClass.N))) {
+                stream.forEachRemaining(body -> {
+                    if (body.getStarClass() != null) {
                         result.add(body);
                     }
-                }
-                if (page.hasNext()) {
-                    page = this.universeService.findStarsNear(coord, range, /* isMainStar = */ Boolean.TRUE, Arrays.asList(StarClass.N), page.nextPageable());
-                } else {
-                    page = null;
-                }
+                });
             }
 
             // Sort by distance
@@ -376,11 +367,9 @@ public class DiscoveryPanel extends JPanel {
             ysize = Math.min(xsize, zsize);
             yfrom = coord.getY() - ysize / 2;
             yto = coord.getY() + ysize / 2;
-            int psize = Math.round(this.getWidth() / 150f);
-            if (psize % 2 == 0) {
-                psize++;
-            }
-            int poffset = (psize - 1) / 2;
+            int tmp = Math.round(this.getHeight() / 500f);
+            final int psize = tmp % 2 == 0 ? tmp + 1 : tmp;
+            final int poffset = (psize - 1) / 2;
 
             // My travel history
             if (this.commanderData.getVisitedStarSystems().size() >= 2) {
@@ -393,8 +382,8 @@ public class DiscoveryPanel extends JPanel {
                     Point curr = this.coordToPoint(visitedStarSystem.getCoord());
                     if (prev != null) {
                         alpha += 8;
-                        ((Graphics2D) g).setStroke(new BasicStroke(3));
-                        g.setColor(new Color(80, 80, 80, alpha));
+                        //((Graphics2D) g).setStroke(new BasicStroke(3));
+                        g.setColor(new Color(140, 140, 140, alpha));
                         g.drawLine(prev.x, prev.y, curr.x, curr.y);
                     }
                     prev = curr;
@@ -402,30 +391,32 @@ public class DiscoveryPanel extends JPanel {
             }
 
             // Known systems
-            Page<StarSystem> systems = this.universeService.findSystemsWithin(xfrom, xto, yfrom, yto, zfrom, zto, new PageRequest(0, 10000));
-            logger.debug("Found " + systems.getTotalElements() + " system(s)");
-            for (StarSystem system : systems.getContent()) {
-                Point p = this.coordToPoint(system.getCoord());
-                float dy = Math.abs(system.getCoord().getY() - coord.getY());
-                int alpha = 255 - Math.round((dy / (ysize / 2)) * 255);
+            try (CloseableIterator<StarSystem> stream = this.universeService.streamAllSystemsWithin(xfrom, xto, yfrom, yto, zfrom, zto)) {
+                stream.forEachRemaining(system -> {
+                    Point p = this.coordToPoint(system.getCoord());
+                    float dy = Math.abs(system.getCoord().getY() - coord.getY());
+                    int alpha = 255 - Math.round((dy / (ysize / 2)) * 255);
 
-                g.setColor(new Color(80, 80, 80, alpha));
-                g.fillRect(p.x - 1, p.y - 1, 3, 3);
+                    g.setColor(new Color(80, 80, 80, alpha));
+                    g.fillRect(p.x - poffset, p.y - poffset, psize, psize);
+                    //g.fillRect(p.x, p.y, 1, 1);
+                });
             }
 
             // Known entry stars
-            Page<Body> mainStars = this.universeService.findStarsWithin(xfrom, xto, yfrom, yto, zfrom, zto, /* isMainStar = */ Boolean.TRUE, /* starClasses = */ null, new PageRequest(0, 10000));
-            logger.debug("Found " + mainStars.getTotalElements() + " main star(s) with known spectral class");
-            for (Body mainStar : mainStars.getContent()) {
-                if (mainStar.getStarClass() != null) {
-                    Point p = this.coordToPoint(mainStar.getCoord());
-                    float dy = Math.abs(mainStar.getCoord().getY() - coord.getY());
-                    int alpha = 255 - Math.round((dy / (ysize / 2)) * 127);
+            try (CloseableIterator<Body> stream = this.universeService.streamStarsWithin(xfrom, xto, yfrom, yto, zfrom, zto, /* isMainStar = */ Boolean.TRUE, /* starClasses = */ null)) {
+                stream.forEachRemaining(mainStar -> {
+                    if (mainStar.getStarClass() != null) {
+                        Point p = this.coordToPoint(mainStar.getCoord());
+                        float dy = Math.abs(mainStar.getCoord().getY() - coord.getY());
+                        int alpha = 255 - Math.round((dy / (ysize / 2)) * 127);
 
-                    Color color = StarUtil.starClassToColor(mainStar.getStarClass());
-                    g.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), alpha));
-                    g.fillRect(p.x - 1, p.y - 1, 3, 3);
-                }
+                        Color color = StarUtil.starClassToColor(mainStar.getStarClass());
+                        g.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), alpha));
+                        g.fillRect(p.x - poffset, p.y - poffset, psize, psize);
+                        //g.fillRect(p.x, p.y, 1, 1);
+                    }
+                });
             }
 
             // Other commanders
