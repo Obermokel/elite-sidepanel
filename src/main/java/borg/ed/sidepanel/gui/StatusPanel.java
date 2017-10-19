@@ -6,6 +6,7 @@ import borg.ed.universe.constants.Economy;
 import borg.ed.universe.constants.Government;
 import borg.ed.universe.constants.State;
 import borg.ed.universe.constants.SystemSecurity;
+import borg.ed.universe.data.Coord;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -116,14 +117,6 @@ public class StatusPanel extends JPanel {
     }
 
     private void updatePanel() {
-        //        if (this.gameSession.getCurrentShipLoadout() != null) {
-        //            if (StringUtils.isNotEmpty(this.gameSession.getCurrentShipLoadout().getShipName())) {
-        //                this.shipNameLabel.setText(this.gameSession.getCurrentShipLoadout().getShipName());
-        //            } else {
-        //                this.shipNameLabel.setText(this.gameSession.getCurrentShipLoadout().getShipType());
-        //            }
-        //        }
-        //
         //        int totalData = this.inventory.getTotal(ItemType.DATA);
         //        int capacityData = this.inventory.getCapacity(ItemType.DATA);
         //        float percentData = (float) totalData / (float) capacityData;
@@ -311,6 +304,10 @@ public class StatusPanel extends JPanel {
                 } else {
                     this.shipNameLabel.setText(commanderData.getCurrentShip().getType());
                 }
+            }
+
+            if (commanderData.getCurrentCoord() != null) {
+                this.distanceFromSolLabel.setText(String.format(Locale.US, "Sol: %.0f Ly", new Coord(0, 0, 0).distanceTo(commanderData.getCurrentCoord())));
             }
         } catch (Exception e) {
             logger.error("Failed to update " + this, e);
