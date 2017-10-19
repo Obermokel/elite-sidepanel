@@ -1,6 +1,11 @@
 package borg.ed.sidepanel.gui;
 
 import borg.ed.sidepanel.commander.CommanderData;
+import borg.ed.universe.constants.Allegiance;
+import borg.ed.universe.constants.Economy;
+import borg.ed.universe.constants.Government;
+import borg.ed.universe.constants.State;
+import borg.ed.universe.constants.SystemSecurity;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -285,19 +290,19 @@ public class StatusPanel extends JPanel {
             if (StringUtils.isEmpty(commanderData.getSystemFaction()) || "None".equals(commanderData.getSystemFaction())) {
                 this.factionAndAllegianceLabel.setText("No faction");
             } else {
-                this.factionAndAllegianceLabel.setText(String.format(Locale.US, "%s (%s)", commanderData.getSystemFaction(), commanderData.getSystemAllegiance()));
+                this.factionAndAllegianceLabel.setText(String.format(Locale.US, "%s (%s)", commanderData.getSystemFaction(), Allegiance.fromJournalValue(commanderData.getSystemAllegiance())));
             }
 
             if (StringUtils.isEmpty(commanderData.getSystemEconomy()) || "None".equals(commanderData.getSystemEconomy())) {
                 this.economyAndStateLabel.setText("No economy");
             } else {
-                this.economyAndStateLabel.setText(String.format(Locale.US, "%s (%s)", commanderData.getSystemEconomy(), commanderData.getSystemState()));
+                this.economyAndStateLabel.setText(String.format(Locale.US, "%s (%s)", Economy.fromJournalValue(commanderData.getSystemEconomy()), State.fromJournalValue(commanderData.getSystemState())));
             }
 
             if (StringUtils.isEmpty(commanderData.getSystemGovernment()) || "None".equals(commanderData.getSystemGovernment())) {
                 this.governmentAndSecurityLabel.setText("No government");
             } else {
-                this.governmentAndSecurityLabel.setText(String.format(Locale.US, "%s (%s)", commanderData.getSystemGovernment(), commanderData.getSystemSecurity()));
+                this.governmentAndSecurityLabel.setText(String.format(Locale.US, "%s (%s)", Government.fromJournalValue(commanderData.getSystemGovernment()), SystemSecurity.fromJournalValue(commanderData.getSystemSecurity())));
             }
 
             if (commanderData.getCurrentShip() != null) {
