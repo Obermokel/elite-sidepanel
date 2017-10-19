@@ -11,6 +11,8 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -29,16 +31,20 @@ public class SidepanelApplication {
 
     private static final ApplicationContext APPCTX = new AnnotationConfigApplicationContext(SidepanelApplication.class);
 
-    public static final String MY_COMMANDER_NAME = "Freddy DeLorean";
+    public static final String MY_COMMANDER_NAME = "Mokel DeLorean [GPL]";
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         try {
             UIManager.setLookAndFeel("com.jtattoo.plaf.noire.NoireLookAndFeel");
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        CommanderData commanderData = new CommanderData(); // TODO Read entire journal
+        File journalDir = new File(System.getProperty("user.home"), "Saved Games\\Frontier Developments\\Elite Dangerous");
+        if (!journalDir.exists()) {
+            journalDir = new File(System.getProperty("user.home"), "Google Drive\\Elite Dangerous\\Journal");
+        }
+        CommanderData commanderData = new CommanderData(MY_COMMANDER_NAME, journalDir);
         Map<String, OtherCommanderLocation> otherCommanders = new TreeMap<>();
 
         SidePanelFrame frame = new SidePanelFrame("SidePanel", APPCTX, commanderData, otherCommanders);
