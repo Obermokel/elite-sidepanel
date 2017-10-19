@@ -198,8 +198,9 @@ public class SidePanelFrame extends JFrame implements WindowListener, JournalUpd
 				@Override
 				public void run() {
 					try {
-						Thread.sleep(2500L);
-						SidePanelFrame.this.discoveryPanel.updateFromElasticsearch();
+						SidePanelFrame.this.discoveryPanel.updateFromElasticsearch(true);
+						Thread.sleep(5000L);
+						SidePanelFrame.this.discoveryPanel.updateFromElasticsearch(false);
 					} catch (InterruptedException e) {
 						// Quit
 					}

@@ -65,9 +65,11 @@ public class DiscoveryPanel extends JPanel {
 
 	private UniverseService universeService = null;
 
-	private JTextArea txtClosestNeutronStars = new JTextArea(10, 40);
+	private JTextArea txtClosestNeutronStars = new JTextArea(5, 40);
 	private JTextArea txtClosestValuableSystems = new JTextArea(10, 40);
 	private JTextArea txtClosestJumponiumBodies = new JTextArea(10, 40);
+	private JTextArea txtKnownBodies = new JTextArea(3, 40);
+	private JTextArea txtValuableBodies = new JTextArea(3, 40);
 	private Area area = null;
 
 	public DiscoveryPanel(ApplicationContext appctx, CommanderData commanderData, Map<String, OtherCommanderLocation> otherCommanders) {
@@ -83,6 +85,10 @@ public class DiscoveryPanel extends JPanel {
 		this.txtClosestNeutronStars.setFont(font);
 		this.txtClosestValuableSystems.setFont(font);
 		this.txtClosestJumponiumBodies.setFont(font);
+		this.txtKnownBodies.setFont(font);
+		this.txtKnownBodies.setLineWrap(true);
+		this.txtValuableBodies.setFont(font);
+		this.txtValuableBodies.setLineWrap(true);
 
 		box.add(new JLabel("Closest neutron stars:"));
 		box.add(this.txtClosestNeutronStars);
@@ -93,6 +99,12 @@ public class DiscoveryPanel extends JPanel {
 		box.add(new JLabel("Closest jumponium rich bodies:"));
 		box.add(this.txtClosestJumponiumBodies);
 		box.add(new JLabel(" "));
+		box.add(new JLabel("Known bodies in system:"));
+		box.add(this.txtKnownBodies);
+		box.add(new JLabel(" "));
+		box.add(new JLabel("Valuable bodies in system:"));
+		box.add(this.txtValuableBodies);
+		box.add(new JLabel(" "));
 		JPanel dummyPanel = new JPanel(new BorderLayout());
 		dummyPanel.add(box, BorderLayout.NORTH);
 		dummyPanel.add(new JLabel(""), BorderLayout.CENTER);
@@ -102,49 +114,62 @@ public class DiscoveryPanel extends JPanel {
 		this.add(this.area, BorderLayout.CENTER);
 	}
 
-	public void updateFromElasticsearch() {
+	public void updateFromElasticsearch(boolean knownOnly) {
 		final Coord coord = this.commanderData.getCurrentCoord();
 		if (coord == null) {
 			return;
 		}
 
-		final int maxNumber = 10;
+		List<Body> knownBodies = this.universeService.findBodiesByStarSystemName(this.commanderData.getCurrentStarSystem());
+		this.txtKnownBodies.setText(knownBodies.stream() //
+				.filter(b -> !b.getName().toLowerCase().contains("belt")) //
+				.sorted((b1, b2) -> b1.getName().toLowerCase().compareTo(b2.getName().toLowerCase())) //
+				.map(b -> b.getName().replace(b.getStarSystemName(), "").trim()) //
+				.map(name -> StringUtils.isEmpty(name) ? "MAIN" : name) //
+				.collect(Collectors.joining(", ")));
+		this.txtValuableBodies.setText(knownBodies.stream() //
+				.filter(b -> BodyUtil.estimatePayout(b) >= 10_000) //
+				.sorted((b1, b2) -> -1 * new Long(BodyUtil.estimatePayout(b1)).compareTo(BodyUtil.estimatePayout(b2))) //
+				.map(b -> String.format(Locale.US, "%s: %,d CR", b.getName().replace(b.getStarSystemName(), "").trim(), BodyUtil.estimatePayout(b))) //
+				.collect(Collectors.joining(", ")));
 
-		StringBuilder neutronStarsText = new StringBuilder();
-		List<Body> neutronStars = this.findNearbyNeutronStars(coord, /* range = */ 250f);
-		for (int i = 0; i < Math.min(maxNumber, neutronStars.size()); i++) {
-			Body body = neutronStars.get(i);
-			neutronStarsText.append(String.format(Locale.US, "%.0f Ly -- %s\n", body.getCoord().distanceTo(coord), body.getName()));
-		}
-		this.txtClosestNeutronStars.setText(neutronStarsText.toString().trim());
-
-		StringBuilder valuableSystemsText = new StringBuilder();
-		LinkedHashMap<String, Long> valuableSystems = this.findNearbyValuableSystems(coord, /* range = */ 250f);
-		int counter = 0;
-		for (String systemName : valuableSystems.keySet()) {
-			if (counter++ < maxNumber) {
-				long payout = valuableSystems.get(systemName);
-				valuableSystemsText.append(String.format(Locale.US, "%,d CR -- %s\n", payout, systemName));
+		if (!knownOnly) {
+			StringBuilder neutronStarsText = new StringBuilder();
+			List<Body> neutronStars = this.findNearbyNeutronStars(coord, /* range = */ 250f);
+			for (int i = 0; i < Math.min(5, neutronStars.size()); i++) {
+				Body body = neutronStars.get(i);
+				neutronStarsText.append(String.format(Locale.US, "%.0f Ly -- %s\n", body.getCoord().distanceTo(coord), body.getName()));
 			}
-		}
-		this.txtClosestValuableSystems.setText(valuableSystemsText.toString().trim());
+			this.txtClosestNeutronStars.setText(neutronStarsText.toString().trim());
 
-		StringBuilder jumponiumBodiesText = new StringBuilder();
-		List<Body> jumponiumRichBodies = this.findNearbyJumponiumRichBodies(coord, /* range = */ 250f);
-		for (int i = 0; i < Math.min(maxNumber, jumponiumRichBodies.size()); i++) {
-			Body body = jumponiumRichBodies.get(i);
-			String mats = body.getMaterialShares().stream() //
-					.filter(sh -> sh.getPercent() != null && sh.getPercent().floatValue() > 0) //
-					.filter(sh -> Element.POLONIUM.equals(sh.getName()) || Element.YTTRIUM.equals(sh.getName()) || Element.NIOBIUM.equals(sh.getName())
-							|| Element.ARSENIC.equals(sh.getName())) //
-					.sorted((sh1, sh2) -> sh1.getName().name().compareTo(sh2.getName().name())) //
-					.map(sh -> String.format(Locale.US, "%.1f%% %s", sh.getPercent().floatValue(), sh.getName().name().substring(0, 3))) //
-					.collect(Collectors.joining(", "));
-			jumponiumBodiesText.append(String.format(Locale.US, "%.0f Ly -- %s -- %s\n", body.getCoord().distanceTo(coord), body.getName(), mats));
-		}
-		this.txtClosestJumponiumBodies.setText(jumponiumBodiesText.toString().trim());
+			StringBuilder valuableSystemsText = new StringBuilder();
+			LinkedHashMap<String, Long> valuableSystems = this.findNearbyValuableSystems(coord, /* range = */ 250f);
+			int counter = 0;
+			for (String systemName : valuableSystems.keySet()) {
+				if (counter++ < 10) {
+					long payout = valuableSystems.get(systemName);
+					valuableSystemsText.append(String.format(Locale.US, "%,d CR -- %s\n", payout, systemName));
+				}
+			}
+			this.txtClosestValuableSystems.setText(valuableSystemsText.toString().trim());
 
-		this.area.updateFromElasticsearch();
+			StringBuilder jumponiumBodiesText = new StringBuilder();
+			List<Body> jumponiumRichBodies = this.findNearbyJumponiumRichBodies(coord, /* range = */ 250f);
+			for (int i = 0; i < Math.min(10, jumponiumRichBodies.size()); i++) {
+				Body body = jumponiumRichBodies.get(i);
+				String mats = body.getMaterialShares().stream() //
+						.filter(sh -> sh.getPercent() != null && sh.getPercent().floatValue() > 0) //
+						.filter(sh -> Element.POLONIUM.equals(sh.getName()) || Element.YTTRIUM.equals(sh.getName()) || Element.NIOBIUM.equals(sh.getName())
+								|| Element.ARSENIC.equals(sh.getName())) //
+						.sorted((sh1, sh2) -> sh1.getName().name().compareTo(sh2.getName().name())) //
+						.map(sh -> String.format(Locale.US, "%.1f%% %s", sh.getPercent().floatValue(), sh.getName().name().substring(0, 3))) //
+						.collect(Collectors.joining(", "));
+				jumponiumBodiesText.append(String.format(Locale.US, "%.0f Ly -- %s -- %s\n", body.getCoord().distanceTo(coord), body.getName(), mats));
+			}
+			this.txtClosestJumponiumBodies.setText(jumponiumBodiesText.toString().trim());
+
+			this.area.updateFromElasticsearch();
+		}
 	}
 
 	private List<Body> findNearbyNeutronStars(final Coord coord, final float range) {
