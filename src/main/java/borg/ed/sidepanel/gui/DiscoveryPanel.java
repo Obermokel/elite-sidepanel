@@ -117,6 +117,7 @@ public class DiscoveryPanel extends JPanel {
             return;
         }
 
+        logger.trace("Searching for known bodies in " + this.commanderData.getCurrentStarSystem());
         List<Body> knownBodies = this.universeService.findBodiesByStarSystemName(this.commanderData.getCurrentStarSystem());
         this.txtKnownBodies.setText(knownBodies.stream() //
                 .filter(b -> !b.getName().toLowerCase().contains("belt")) //
@@ -124,6 +125,8 @@ public class DiscoveryPanel extends JPanel {
                 .map(b -> b.getName().replace(b.getStarSystemName(), "").trim()) //
                 .map(name -> StringUtils.isEmpty(name) ? "MAIN" : name) //
                 .collect(Collectors.joining(", ")));
+
+        logger.trace("Searching for valuable bodies in " + this.commanderData.getCurrentStarSystem());
         this.txtValuableBodies.setText(knownBodies.stream() //
                 .filter(b -> BodyUtil.estimatePayout(b) >= 10_000) //
                 .sorted((b1, b2) -> -1 * new Long(BodyUtil.estimatePayout(b1)).compareTo(BodyUtil.estimatePayout(b2))) //
@@ -200,6 +203,8 @@ public class DiscoveryPanel extends JPanel {
         List<Body> result = new ArrayList<>();
 
         try {
+            logger.trace("Searching for neutron stars " + range + " Ly around " + coord);
+
             try (CloseableIterator<Body> stream = this.universeService.streamStarsNear(coord, range, /* isMainStar = */ Boolean.TRUE, Arrays.asList(StarClass.N))) {
                 stream.forEachRemaining(body -> {
                     if (body.getStarClass() != null) {
@@ -228,6 +233,8 @@ public class DiscoveryPanel extends JPanel {
         List<Body> result = new ArrayList<>();
 
         try {
+            logger.trace("Searching for jumponium+5 " + range + " Ly around " + coord);
+
             MaterialShare g5 = new MaterialShare();
             g5.setName(grade5Element);
             MaterialShare nio = new MaterialShare();
@@ -273,6 +280,8 @@ public class DiscoveryPanel extends JPanel {
         List<Body> result = new ArrayList<>();
 
         try {
+            logger.trace("Searching for jumponium rich bodies " + range + " Ly around " + coord);
+
             MaterialShare pol = new MaterialShare();
             pol.setName(Element.POLONIUM);
             pol.setPercent(new BigDecimal("0.5"));
@@ -340,6 +349,8 @@ public class DiscoveryPanel extends JPanel {
         LinkedHashMap<String, Long> valueBySystem = new LinkedHashMap<>();
 
         try {
+            logger.trace("Searching for valuable systems " + range + " Ly around " + coord);
+
             final long maxDistanceFromArrival = 10_000L; // Ls
             final long minValue = 1_000_000L; // CR
 
@@ -393,6 +404,8 @@ public class DiscoveryPanel extends JPanel {
         List<StarSystem> result = new ArrayList<>();
 
         try {
+            logger.trace("Searching for jumponium rich systems " + range + " Ly around " + coord);
+
             MaterialShare pol = new MaterialShare();
             pol.setName(Element.POLONIUM);
             MaterialShare ytt = new MaterialShare();
@@ -434,7 +447,6 @@ public class DiscoveryPanel extends JPanel {
             // Intersection
             Set<String> systemNames = new HashSet<>(poloniumSystemNames);
             systemNames.retainAll(yttriumSystemNames);
-            logger.debug("Polonium systems: " + poloniumSystemNames.size() + "; Yttrium systems: " + yttriumSystemNames.size() + "; Both: " + systemNames.size());
 
             for (String systemName : systemNames) {
                 StarSystem starSystem = this.universeService.findStarSystemByName(systemName);
@@ -453,7 +465,6 @@ public class DiscoveryPanel extends JPanel {
                     }
                 }
             }
-            logger.debug("Jumponium systems: " + result.size());
 
             // Sort by distance
             if (!result.isEmpty()) {
@@ -544,6 +555,7 @@ public class DiscoveryPanel extends JPanel {
             final int poffset = (psize - 1) / 2;
 
             // My travel history
+            logger.trace("Painting travel history");
             if (this.commanderData.getVisitedStarSystems().size() >= 2) {
                 int toIndex = this.commanderData.getVisitedStarSystems().size();
                 int fromIndex = Math.max(0, toIndex - 32);
@@ -563,6 +575,7 @@ public class DiscoveryPanel extends JPanel {
             }
 
             // Known systems
+            logger.trace("Painting known systems");
             try (CloseableIterator<StarSystem> stream = this.universeService.streamAllSystemsWithin(xfrom, xto, yfrom, yto, zfrom, zto)) {
                 stream.forEachRemaining(system -> {
                     Point p = this.coordToPoint(system.getCoord());
@@ -576,6 +589,7 @@ public class DiscoveryPanel extends JPanel {
             }
 
             // Known entry stars
+            logger.trace("Painting known entry stars");
             try (CloseableIterator<Body> stream = this.universeService.streamStarsWithin(xfrom, xto, yfrom, yto, zfrom, zto, /* isMainStar = */ Boolean.TRUE, /* starClasses = */ null)) {
                 stream.forEachRemaining(mainStar -> {
                     if (mainStar.getStarClass() != null) {
@@ -592,6 +606,7 @@ public class DiscoveryPanel extends JPanel {
             }
 
             // Other commanders
+            logger.trace("Painting other commanders");
             g.setColor(Color.CYAN);
             g.setFont(new Font("Sans Serif", Font.PLAIN, 12));
             for (OtherCommanderLocation location : this.otherCommanders.values()) {

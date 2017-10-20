@@ -9,6 +9,7 @@
     </appender>
 
     <logger name="borg" level="DEBUG" />
+    <logger name="borg.ed.sidepanel" level="TRACE" />
 
     <root level="WARN">
         <appender-ref ref="STDOUT" />
