@@ -23,10 +23,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.util.CloseableIterator;
 
+import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Point;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -541,7 +543,7 @@ public class DiscoveryPanel extends JPanel {
                 return;
             }
 
-            zsize = 2 * 750f;
+            zsize = 2 * 1000f;
             zfrom = coord.getZ() - zsize / 2;
             zto = coord.getZ() + zsize / 2;
             xsize = ((float) this.getWidth() / (float) this.getHeight()) * zsize;
@@ -566,8 +568,8 @@ public class DiscoveryPanel extends JPanel {
                     Point curr = this.coordToPoint(visitedStarSystem.getCoord());
                     if (prev != null) {
                         alpha += 8;
-                        //((Graphics2D) g).setStroke(new BasicStroke(3));
-                        g.setColor(new Color(140, 140, 140, alpha));
+                        ((Graphics2D) g).setStroke(new BasicStroke(2));
+                        g.setColor(new Color(160, 160, 160, alpha));
                         g.drawLine(prev.x, prev.y, curr.x, curr.y);
                     }
                     prev = curr;
