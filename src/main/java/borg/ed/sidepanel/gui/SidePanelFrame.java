@@ -83,7 +83,7 @@ public class SidePanelFrame extends JFrame implements WindowListener, JournalUpd
         this.journalReaderThread.addListener(this);
         this.journalReaderThread.start();
         this.eddnReaderThread.addListener(this);
-        //		this.eddnReaderThread.start();
+        this.eddnReaderThread.start();
 
         this.statusPanel.updateFromCommanderData(this.commanderData);
         this.discoveryPanel.updateFromElasticsearch(/* repaintMap = */ true);
@@ -92,7 +92,7 @@ public class SidePanelFrame extends JFrame implements WindowListener, JournalUpd
     @Override
     public void windowClosing(WindowEvent e) {
         this.journalReaderThread.interrupt();
-        //		eddnReaderThread.interrupt();
+        eddnReaderThread.interrupt();
     }
 
     @Override
@@ -104,13 +104,13 @@ public class SidePanelFrame extends JFrame implements WindowListener, JournalUpd
                 break;
             }
         }
-        //		while (eddnReaderThread.isAlive()) {
-        //			try {
-        //				Thread.sleep(10);
-        //			} catch (InterruptedException ex) {
-        //				break;
-        //			}
-        //		}
+        while (eddnReaderThread.isAlive()) {
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException ex) {
+                break;
+            }
+        }
 
         System.exit(0);
     }

@@ -609,10 +609,13 @@ public class DiscoveryPanel extends JPanel {
 
             // Other commanders
             logger.trace("Painting other commanders");
-            g.setColor(Color.CYAN);
             g.setFont(new Font("Sans Serif", Font.PLAIN, 12));
             for (OtherCommanderLocation location : this.otherCommanders.values()) {
                 Point p = this.coordToPoint(location.getCoord());
+                float dy = Math.abs(location.getCoord().getY() - coord.getY());
+                int alpha = 255 - Math.round((dy / (ysize / 2)) * 127);
+
+                g.setColor(new Color(0, 255, 255, alpha));
                 //g.fillRect(p.x - poffset, p.y - poffset, psize, psize);
                 g.drawString(location.getCommanderName(), p.x, p.y);
             }
