@@ -26,8 +26,10 @@ import java.io.FileFilter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * CommanderData
@@ -39,6 +41,8 @@ import java.util.List;
 public class CommanderData {
 
     static final Logger logger = LoggerFactory.getLogger(CommanderData.class);
+
+    private final Set<Integer> processedJournalEventHashes = new HashSet<>();
 
     private final String commanderName;
 
@@ -127,7 +131,11 @@ public class CommanderData {
         }
     }
 
-    public void updateFromJournalEvent(AbstractJournalEvent event) {
+    public boolean updateFromJournalEvent(AbstractJournalEvent event) {
+        if (event == null || this.processedJournalEventHashes.contains(event.hashCode())) {
+            return false;
+        }
+
         if (event instanceof FSDJumpEvent) {
             this.updateFromFsdJumpEvent((FSDJumpEvent) event);
         } else if (event instanceof ScanEvent) {
@@ -141,6 +149,9 @@ public class CommanderData {
         } else if (event instanceof DiedEvent) {
             this.updateFromDiedEvent((DiedEvent) event);
         }
+
+        this.processedJournalEventHashes.add(event.hashCode());
+        return true;
     }
 
     private void updateFromFsdJumpEvent(FSDJumpEvent event) {

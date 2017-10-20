@@ -137,12 +137,13 @@ public class SidePanelFrame extends JFrame implements WindowListener, JournalUpd
 
     @Override
     public void onNewJournalEntry(AbstractJournalEvent event) {
-        this.commanderData.updateFromJournalEvent(event);
+        if (this.commanderData.updateFromJournalEvent(event)) {
 
-        this.statusPanel.updateFromCommanderData(this.commanderData);
+            this.statusPanel.updateFromCommanderData(this.commanderData);
 
-        if (event instanceof FSDJumpEvent) {
-            this.discoveryPanel.updateFromElasticsearch(/* repaintMap = */ true);
+            if (event instanceof FSDJumpEvent) {
+                this.discoveryPanel.updateFromElasticsearch(/* repaintMap = */ true);
+            }
         }
     }
 
