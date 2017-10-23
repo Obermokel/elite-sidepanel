@@ -7,6 +7,8 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -508,7 +510,7 @@ public class DiscoveryPanel extends JPanel {
 		return result;
 	}
 
-	public static class Area extends JPanel {
+	public static class Area extends JPanel implements MouseWheelListener {
 
 		private static final long serialVersionUID = 8383226308842901529L;
 
@@ -517,21 +519,24 @@ public class DiscoveryPanel extends JPanel {
 
 		private UniverseService universeService = null;
 
-		private float xsize = 25f;
-		private float xfrom = 0f - xsize;
-		private float xto = 0f + xsize;
-		private float ysize = 25f;
-		private float yfrom = 0f - ysize;
-		private float yto = 0f + ysize;
-		private float zsize = 25f;
-		private float zfrom = 0f - zsize;
-		private float zto = 0f + zsize;
+		private float zoom = 1000f;
+		private float xsize = 0f;
+		private float xfrom = 0f;
+		private float xto = 0f;
+		private float ysize = 0f;
+		private float yfrom = 0f;
+		private float yto = 0f;
+		private float zsize = 0f;
+		private float zfrom = 0f;
+		private float zto = 0f;
 
 		public Area(ApplicationContext appctx, CommanderData commanderData, Map<String, OtherCommanderLocation> otherCommanders) {
 			this.commanderData = commanderData;
 			this.otherCommanders = otherCommanders;
 
 			this.universeService = appctx.getBean(UniverseService.class);
+
+			this.addMouseWheelListener(this);
 		}
 
 		public void updateFromElasticsearch() {
@@ -551,7 +556,7 @@ public class DiscoveryPanel extends JPanel {
 				return;
 			}
 
-			zsize = 2 * 1000f;
+			zsize = zoom;
 			zfrom = coord.getZ() - zsize / 2;
 			zto = coord.getZ() + zsize / 2;
 			xsize = ((float) this.getWidth() / (float) this.getHeight()) * zsize;
@@ -645,6 +650,30 @@ public class DiscoveryPanel extends JPanel {
 			float yPercent = 1.0f - ((coord.getZ() - this.zfrom) / this.zsize);
 
 			return new Point(Math.round(xPercent * this.getWidth()), Math.round(yPercent * this.getHeight()));
+		}
+
+		@Override
+		public void mouseWheelMoved(MouseWheelEvent e) {
+			int notches = e.getWheelRotation();
+			if (notches < 0) {
+				for (int i = 0; i < Math.abs(notches); i++) {
+					this.zoom -= 100f;
+					if (this.zoom < 100f) {
+						this.zoom = 100f;
+						break;
+					}
+				}
+				this.repaint();
+			} else if (notches > 0) {
+				for (int i = 0; i < Math.abs(notches); i++) {
+					this.zoom += 100f;
+					if (this.zoom > 5000f) {
+						this.zoom = 5000f;
+						break;
+					}
+				}
+				this.repaint();
+			}
 		}
 
 	}
