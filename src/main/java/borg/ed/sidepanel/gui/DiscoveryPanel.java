@@ -634,6 +634,10 @@ public class DiscoveryPanel extends JPanel {
 					g.drawString(location.getCommanderName(), p.x, p.y);
 				}
 			}
+
+			// Scale
+			g.setColor(Color.WHITE);
+			g.drawString(String.format(Locale.US, "%,.0f Ly x %,.0f Ly", xsize, zsize), 5, 15);
 		}
 
 		private Point coordToPoint(Coord coord) {
