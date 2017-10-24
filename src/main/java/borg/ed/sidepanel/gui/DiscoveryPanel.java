@@ -191,10 +191,8 @@ public class DiscoveryPanel extends JPanel {
 			Map<Element, BigDecimal> totalMaterials = this.sumMaterialsOfSystem(starSystem.getName());
 			BigDecimal polonium = totalMaterials.getOrDefault(Element.POLONIUM, BigDecimal.ZERO);
 			BigDecimal yttrium = totalMaterials.getOrDefault(Element.YTTRIUM, BigDecimal.ZERO);
-			BigDecimal cadmium = totalMaterials.getOrDefault(Element.CADMIUM, BigDecimal.ZERO);
 			BigDecimal niobium = totalMaterials.getOrDefault(Element.NIOBIUM, BigDecimal.ZERO);
-			BigDecimal arsenic = totalMaterials.getOrDefault(Element.ARSENIC, BigDecimal.ZERO);
-			String mats = String.format(Locale.US, "%.1f%% Po, %.1f%% Y, %.1f%% Cd, %.1f%% Nb, %.1f%% As", polonium, yttrium, cadmium, niobium, arsenic);
+			String mats = String.format(Locale.US, "%.1f%% Po, %.1f%% Y, %.1f%% Nb, +4", polonium, yttrium, niobium);
 			jumponiumBodiesText.append(String.format(Locale.US, "%.0f Ly -- %s -- %s\n", starSystem.getCoord().distanceTo(coord), starSystem.getName(), mats));
 		}
 		nJumponium += jumponiumRichSystems.size();
