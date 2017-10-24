@@ -45,6 +45,7 @@ import borg.ed.universe.constants.PlanetClass;
 import borg.ed.universe.constants.StarClass;
 import borg.ed.universe.constants.TerraformingState;
 import borg.ed.universe.data.Coord;
+import borg.ed.universe.exceptions.NonUniqueResultException;
 import borg.ed.universe.model.Body;
 import borg.ed.universe.model.Body.MaterialShare;
 import borg.ed.universe.model.StarSystem;
@@ -147,12 +148,19 @@ public class DiscoveryPanel extends JPanel {
 		this.txtClosestNeutronStars.setText(neutronStarsText.toString().trim());
 
 		StringBuilder valuableSystemsText = new StringBuilder();
-		LinkedHashMap<String, Long> valuableSystems = this.findNearbyValuableSystems(coord, /* range = */ 250f);
+		LinkedHashMap<String, Long> valuableSystems = this.findNearbyValuableSystems(coord, /* range = */ 500f);
 		int counter = 0;
 		for (String systemName : valuableSystems.keySet()) {
+			float distance = 0f;
+			try {
+				StarSystem starSystem = this.universeService.findStarSystemByName(systemName);
+				distance = starSystem == null || starSystem.getCoord() == null ? 0f : starSystem.getCoord().distanceTo(coord);
+			} catch (NonUniqueResultException e) {
+				// Ignore
+			}
 			if (counter++ < 10) {
 				long payout = valuableSystems.get(systemName);
-				valuableSystemsText.append(String.format(Locale.US, "%,d CR -- %s\n", payout, systemName));
+				valuableSystemsText.append(String.format(Locale.US, "%.0f Ly -- %s -- %,d CR\n", distance, systemName, payout));
 			}
 		}
 		this.txtClosestValuableSystems.setText(valuableSystemsText.toString().trim());
