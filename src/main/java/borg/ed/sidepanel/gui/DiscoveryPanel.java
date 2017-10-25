@@ -579,14 +579,14 @@ public class DiscoveryPanel extends JPanel {
 			logger.trace("Painting travel history");
 			if (this.commanderData.getVisitedStarSystems().size() >= 2) {
 				int toIndex = this.commanderData.getVisitedStarSystems().size();
-				int fromIndex = Math.max(0, toIndex - 32);
+				int fromIndex = Math.max(0, toIndex - 128);
 				int alpha = 0;
 				Point prev = null;
 				for (int idx = fromIndex; idx < toIndex; idx++) {
 					VisitedStarSystem visitedStarSystem = this.commanderData.getVisitedStarSystems().get(idx);
 					Point curr = this.coordToPoint(visitedStarSystem.getCoord());
 					if (prev != null) {
-						alpha += 8;
+						alpha += 2;
 						((Graphics2D) g).setStroke(new BasicStroke(2));
 						g.setColor(new Color(160, 160, 160, alpha));
 						g.drawLine(prev.x, prev.y, curr.x, curr.y);
@@ -673,8 +673,8 @@ public class DiscoveryPanel extends JPanel {
 			} else if (notches > 0) {
 				for (int i = 0; i < Math.abs(notches); i++) {
 					this.zoom += 100f;
-					if (this.zoom > 5000f) {
-						this.zoom = 5000f;
+					if (this.zoom > 20000f) {
+						this.zoom = 20000f;
 						break;
 					}
 				}
