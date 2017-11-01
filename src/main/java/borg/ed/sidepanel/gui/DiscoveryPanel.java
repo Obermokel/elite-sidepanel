@@ -267,7 +267,7 @@ public class DiscoveryPanel extends JPanel {
 				for (Body body : page.getContent()) {
 					result.add(body);
 				}
-				if (page.hasNext()) {
+				if (page.hasNext() && page.getNumber() + 1 < 10000 / page.getSize()) {
 					page = this.universeService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(g5, nio, ars, cad, ger, van), page.nextPageable());
 				} else {
 					page = null;
@@ -317,7 +317,7 @@ public class DiscoveryPanel extends JPanel {
 						result.add(body);
 					}
 				}
-				if (page.hasNext()) {
+				if (page.hasNext() && page.getNumber() + 1 < 10000 / page.getSize()) {
 					page = this.universeService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(pol, nio, ars), page.nextPageable());
 				} else {
 					page = null;
@@ -332,7 +332,7 @@ public class DiscoveryPanel extends JPanel {
 						result.add(body);
 					}
 				}
-				if (page.hasNext()) {
+				if (page.hasNext() && page.getNumber() + 1 < 10000 / page.getSize()) {
 					page = this.universeService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(ytt, nio, ars), page.nextPageable());
 				} else {
 					page = null;
@@ -375,7 +375,7 @@ public class DiscoveryPanel extends JPanel {
 			while (page != null) {
 				starSystemNames.addAll(
 						page.getContent().stream().map(Body::getStarSystemName).filter(name -> StringUtils.isNotEmpty(name)).collect(Collectors.toList()));
-				if (page.hasNext()) {
+				if (page.hasNext() && page.getNumber() + 1 < 10000 / page.getSize()) {
 					page = this.universeService.findPlanetsNear(coord, range, /* isTerraformingCandidate = */ null, elwWwAw, page.nextPageable());
 				} else {
 					page = null;
@@ -386,7 +386,7 @@ public class DiscoveryPanel extends JPanel {
 			while (page != null) {
 				starSystemNames.addAll(
 						page.getContent().stream().map(Body::getStarSystemName).filter(name -> StringUtils.isNotEmpty(name)).collect(Collectors.toList()));
-				if (page.hasNext()) {
+				if (page.hasNext() && page.getNumber() + 1 < 10000 / page.getSize()) {
 					page = this.universeService.findPlanetsNear(coord, range, /* isTerraformingCandidate = */ Boolean.TRUE, null, page.nextPageable());
 				} else {
 					page = null;
@@ -453,7 +453,7 @@ public class DiscoveryPanel extends JPanel {
 						poloniumSystemNames.add(body.getStarSystemName());
 					}
 				}
-				if (page.hasNext()) {
+				if (page.hasNext() && page.getNumber() + 1 < 10000 / page.getSize()) {
 					page = this.universeService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(pol), page.nextPageable());
 				} else {
 					page = null;
@@ -468,7 +468,7 @@ public class DiscoveryPanel extends JPanel {
 						yttriumSystemNames.add(body.getStarSystemName());
 					}
 				}
-				if (page.hasNext()) {
+				if (page.hasNext() && page.getNumber() + 1 < 10000 / page.getSize()) {
 					page = this.universeService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(ytt), page.nextPageable());
 				} else {
 					page = null;
