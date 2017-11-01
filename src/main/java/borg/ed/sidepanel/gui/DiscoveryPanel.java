@@ -539,16 +539,16 @@ public class DiscoveryPanel extends JPanel {
 
 		private UniverseService universeService = null;
 
-		private float zoom = 100f;
-		private float xsize = 0f;
-		private float xfrom = 0f;
-		private float xto = 0f;
-		private float ysize = 0f;
-		private float yfrom = 0f;
-		private float yto = 0f;
-		private float zsize = 0f;
-		private float zfrom = 0f;
-		private float zto = 0f;
+		float zoom = 100f;
+		float xsize = 0f;
+		float xfrom = 0f;
+		float xto = 0f;
+		float ysize = 0f;
+		float yfrom = 0f;
+		float yto = 0f;
+		float zsize = 0f;
+		float zfrom = 0f;
+		float zto = 0f;
 
 		public Area(ApplicationContext appctx, CommanderData commanderData, Map<String, OtherCommanderLocation> otherCommanders) {
 			this.commanderData = commanderData;
@@ -696,6 +696,10 @@ public class DiscoveryPanel extends JPanel {
 			}
 		}
 
+	}
+
+	public float getVisibleDistance() {
+		return (float) Math.sqrt(this.area.xsize * this.area.xsize + this.area.zsize * this.area.zsize);
 	}
 
 }
