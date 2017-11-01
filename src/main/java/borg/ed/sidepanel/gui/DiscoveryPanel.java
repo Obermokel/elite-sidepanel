@@ -151,7 +151,8 @@ public class DiscoveryPanel extends JPanel {
 		this.txtClosestNeutronStars.setText(neutronStarsText.toString().trim());
 
 		StringBuilder valuableSystemsText = new StringBuilder();
-		LinkedHashMap<String, Long> valuableSystems = this.findNearbyValuableSystems(coord, /* range = */ 500f, this.commanderData);
+		LinkedHashMap<String, Long> valuableSystems = this.findNearbyValuableSystems(coord, /* range = */ Math.min(500f, this.getVisibleDistance()),
+				this.commanderData);
 		int counter = 0;
 		for (String systemName : valuableSystems.keySet()) {
 			float distance = 0f;
