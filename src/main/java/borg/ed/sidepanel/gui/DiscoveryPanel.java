@@ -137,7 +137,7 @@ public class DiscoveryPanel extends JPanel {
 
 		logger.trace("Searching for valuable bodies in " + this.commanderData.getCurrentStarSystem());
 		this.txtValuableBodies.setText(knownBodies.stream() //
-				.filter(b -> BodyUtil.estimatePayout(b) >= 10_000) //
+				.filter(b -> BodyUtil.estimatePayout(b) >= 50_000) //
 				.sorted((b1, b2) -> -1 * new Long(BodyUtil.estimatePayout(b1)).compareTo(BodyUtil.estimatePayout(b2))) //
 				.map(b -> String.format(Locale.US, "%s: %,d CR", b.getName().replace(b.getStarSystemName(), "").trim(), BodyUtil.estimatePayout(b))) //
 				.collect(Collectors.joining(", ")));
@@ -400,7 +400,7 @@ public class DiscoveryPanel extends JPanel {
 			for (String starSystemName : starSystemNames) {
 				if (this.knownPayouts.containsKey(starSystemName)) {
 					long systemPayout = this.knownPayouts.get(starSystemName);
-					if (systemPayout >= minValue) {
+					if (systemPayout >= minValue && !commanderData.getVisitedStarSystems().stream().anyMatch(vss -> vss.getName().equals(starSystemName))) {
 						valueBySystem.put(starSystemName, systemPayout);
 					}
 				} else {
