@@ -148,7 +148,7 @@ public class DiscoveryPanel extends JPanel {
 		this.txtClosestNeutronStars.setText(neutronStarsText.toString().trim());
 
 		StringBuilder valuableSystemsText = new StringBuilder();
-		LinkedHashMap<String, Long> valuableSystems = this.findNearbyValuableSystems(coord, /* range = */ 500f);
+		LinkedHashMap<String, Long> valuableSystems = this.findNearbyValuableSystems(coord, /* range = */ 500f, this.commanderData);
 		int counter = 0;
 		for (String systemName : valuableSystems.keySet()) {
 			float distance = 0f;
@@ -359,7 +359,7 @@ public class DiscoveryPanel extends JPanel {
 	 * @return
 	 *      Map&lt;systemName, systemPayout&gt;
 	 */
-	private LinkedHashMap<String, Long> findNearbyValuableSystems(final Coord coord, final float range) {
+	private LinkedHashMap<String, Long> findNearbyValuableSystems(final Coord coord, final float range, CommanderData commanderData) {
 		LinkedHashMap<String, Long> valueBySystem = new LinkedHashMap<>();
 
 		try {
@@ -405,7 +405,21 @@ public class DiscoveryPanel extends JPanel {
 				}
 
 				if (systemPayout >= minValue) {
-					valueBySystem.put(starSystemName, systemPayout);
+					boolean skip = false;
+					for (VisitedStarSystem vss : commanderData.getVisitedStarSystems()) {
+						if (vss.getName().equals(starSystemName)) {
+							skip = true; // Assume already scanned
+							break;
+						}
+					}
+					StarSystem starSystem = this.universeService.findStarSystemByName(starSystemName);
+					if (starSystem != null && starSystem.getPopulation() != null && starSystem.getPopulation().longValue() > 0) {
+						skip = true; // Public knowledge
+					}
+
+					if (!skip) {
+						valueBySystem.put(starSystemName, systemPayout);
+					}
 				}
 			}
 
@@ -525,7 +539,7 @@ public class DiscoveryPanel extends JPanel {
 
 		private UniverseService universeService = null;
 
-		private float zoom = 1000f;
+		private float zoom = 100f;
 		private float xsize = 0f;
 		private float xfrom = 0f;
 		private float xto = 0f;
