@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -68,6 +69,8 @@ public class DiscoveryPanel extends JPanel {
 	private final CommanderData commanderData;
 
 	private UniverseService universeService = null;
+	private Set<String> populatedSystems = new HashSet<>();
+	private Map<String, Long> knownPayouts = new HashMap<>();
 
 	private JTextArea txtClosestNeutronStars = new JTextArea(5, 40);
 	private JTextArea txtClosestValuableSystems = new JTextArea(10, 40);
@@ -262,7 +265,7 @@ public class DiscoveryPanel extends JPanel {
 			van.setName(Element.VANADIUM);
 
 			Page<Body> page = this.universeService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(g5, nio, ars, cad, ger, van),
-					PageRequest.of(0, 100));
+					PageRequest.of(0, 10000));
 			while (page != null) {
 				for (Body body : page.getContent()) {
 					result.add(body);
@@ -310,7 +313,7 @@ public class DiscoveryPanel extends JPanel {
 			ars.setPercent(new BigDecimal("2.0"));
 
 			// Polonium
-			Page<Body> page = this.universeService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(pol, nio, ars), PageRequest.of(0, 100));
+			Page<Body> page = this.universeService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(pol, nio, ars), PageRequest.of(0, 10000));
 			while (page != null) {
 				for (Body body : page.getContent()) {
 					if (!result.contains(body)) {
@@ -325,7 +328,7 @@ public class DiscoveryPanel extends JPanel {
 			}
 
 			// Yttrium
-			page = this.universeService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(ytt, nio, ars), PageRequest.of(0, 100));
+			page = this.universeService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(ytt, nio, ars), PageRequest.of(0, 10000));
 			while (page != null) {
 				for (Body body : page.getContent()) {
 					if (!result.contains(body)) {
@@ -371,7 +374,7 @@ public class DiscoveryPanel extends JPanel {
 			Set<String> starSystemNames = new HashSet<>();
 
 			List<PlanetClass> elwWwAw = Arrays.asList(PlanetClass.EARTHLIKE_BODY, PlanetClass.WATER_WORLD, PlanetClass.AMMONIA_WORLD);
-			Page<Body> page = this.universeService.findPlanetsNear(coord, range, /* isTerraformingCandidate = */ null, elwWwAw, PageRequest.of(0, 100));
+			Page<Body> page = this.universeService.findPlanetsNear(coord, range, /* isTerraformingCandidate = */ null, elwWwAw, PageRequest.of(0, 10000));
 			while (page != null) {
 				starSystemNames.addAll(
 						page.getContent().stream().map(Body::getStarSystemName).filter(name -> StringUtils.isNotEmpty(name)).collect(Collectors.toList()));
@@ -382,7 +385,7 @@ public class DiscoveryPanel extends JPanel {
 				}
 			}
 
-			page = this.universeService.findPlanetsNear(coord, range, /* isTerraformingCandidate = */ Boolean.TRUE, null, PageRequest.of(0, 100));
+			page = this.universeService.findPlanetsNear(coord, range, /* isTerraformingCandidate = */ Boolean.TRUE, null, PageRequest.of(0, 10000));
 			while (page != null) {
 				starSystemNames.addAll(
 						page.getContent().stream().map(Body::getStarSystemName).filter(name -> StringUtils.isNotEmpty(name)).collect(Collectors.toList()));
@@ -394,30 +397,42 @@ public class DiscoveryPanel extends JPanel {
 			}
 
 			for (String starSystemName : starSystemNames) {
-				long systemPayout = 0L;
-
-				List<Body> bodies = this.universeService.findBodiesByStarSystemName(starSystemName);
-				for (Body body : bodies) {
-					if (body.getDistanceToArrival() != null && body.getDistanceToArrival().longValue() <= maxDistanceFromArrival) {
-						systemPayout += BodyUtil.estimatePayout(body.getStarClass(), body.getPlanetClass(),
-								TerraformingState.TERRAFORMABLE.equals(body.getTerraformingState()));
+				if (this.knownPayouts.containsKey(starSystemName)) {
+					long systemPayout = this.knownPayouts.get(starSystemName);
+					if (systemPayout >= minValue) {
+						valueBySystem.put(starSystemName, systemPayout);
 					}
-				}
-
-				if (systemPayout >= minValue) {
-					boolean skip = false;
-					for (VisitedStarSystem vss : commanderData.getVisitedStarSystems()) {
-						if (vss.getName().equals(starSystemName)) {
-							skip = true; // Assume already scanned
-							break;
-						}
+				} else {
+					if (this.populatedSystems.contains(starSystemName)) {
+						continue; // Public knowledge
 					}
+
+					boolean visited = commanderData.getVisitedStarSystems().stream().anyMatch(vss -> vss.getName().equals(starSystemName));
+					if (visited) {
+						continue; // Assume already scanned
+					}
+
 					StarSystem starSystem = this.universeService.findStarSystemByName(starSystemName);
 					if (starSystem != null && starSystem.getPopulation() != null && starSystem.getPopulation().longValue() > 0) {
-						skip = true; // Public knowledge
+						this.populatedSystems.add(starSystemName);
+						continue; // Public knowledge
 					}
 
-					if (!skip) {
+					long systemPayout = 0L;
+
+					List<Body> bodies = this.universeService.findBodiesByStarSystemName(starSystemName);
+					for (Body body : bodies) {
+						if (body.getDistanceToArrival() != null && body.getDistanceToArrival().longValue() <= maxDistanceFromArrival) {
+							systemPayout += BodyUtil.estimatePayout(body.getStarClass(), body.getPlanetClass(),
+									TerraformingState.TERRAFORMABLE.equals(body.getTerraformingState()));
+						}
+					}
+
+					this.knownPayouts.put(starSystemName, systemPayout);
+
+					logger.trace(starSystemName + " = " + systemPayout + " CR");
+
+					if (systemPayout >= minValue) {
 						valueBySystem.put(starSystemName, systemPayout);
 					}
 				}
@@ -446,7 +461,7 @@ public class DiscoveryPanel extends JPanel {
 			Set<String> yttriumSystemNames = new HashSet<>();
 
 			// Polonium
-			Page<Body> page = this.universeService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(pol), PageRequest.of(0, 100));
+			Page<Body> page = this.universeService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(pol), PageRequest.of(0, 10000));
 			while (page != null) {
 				for (Body body : page.getContent()) {
 					if (StringUtils.isNotEmpty(body.getStarSystemName())) {
@@ -461,7 +476,7 @@ public class DiscoveryPanel extends JPanel {
 			}
 
 			// Yttrium
-			page = this.universeService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(ytt), PageRequest.of(0, 100));
+			page = this.universeService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(ytt), PageRequest.of(0, 10000));
 			while (page != null) {
 				for (Body body : page.getContent()) {
 					if (StringUtils.isNotEmpty(body.getStarSystemName())) {

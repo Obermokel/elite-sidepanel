@@ -51,6 +51,7 @@ public class SidePanelFrame extends JFrame implements WindowListener, JournalUpd
 	private final Map<String, OtherCommanderLocation> otherCommanders;
 
 	private final ExecutorService delayedEsUpdateThreadPool = Executors.newFixedThreadPool(1);
+	private long lastDiscoveryPanelUpdate = 0L;
 
 	private StatusPanel statusPanel = null;
 	private DiscoveryPanel discoveryPanel = null;
@@ -208,17 +209,21 @@ public class SidePanelFrame extends JFrame implements WindowListener, JournalUpd
 
 	private void updateDiscoveryPanelDelayed() {
 		try {
-			this.delayedEsUpdateThreadPool.execute(new Runnable() {
-				@Override
-				public void run() {
-					try {
-						Thread.sleep(5000L);
-						SidePanelFrame.this.discoveryPanel.updateFromElasticsearch(/* repaintMap = */ false);
-					} catch (InterruptedException e) {
-						// Quit
+			long now = System.currentTimeMillis();
+			if (now - this.lastDiscoveryPanelUpdate >= 10000L) {
+				this.lastDiscoveryPanelUpdate = now;
+				this.delayedEsUpdateThreadPool.execute(new Runnable() {
+					@Override
+					public void run() {
+						try {
+							Thread.sleep(5000L);
+							SidePanelFrame.this.discoveryPanel.updateFromElasticsearch(/* repaintMap = */ false);
+						} catch (InterruptedException e) {
+							// Quit
+						}
 					}
-				}
-			});
+				});
+			}
 		} catch (Exception e) {
 			logger.error("Failed to update DiscoveryPanel", e);
 		}
