@@ -9,6 +9,7 @@ import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -546,12 +547,48 @@ public class DiscoveryPanel extends JPanel {
 		return result;
 	}
 
+	public static class POI implements Serializable {
+
+		private static final long serialVersionUID = 3186440335442864776L;
+
+		private final String systemName;
+		private final String name;
+		private final Coord coord;
+
+		public POI(String systemName, UniverseService universeService) throws NonUniqueResultException {
+			this(systemName, null, universeService);
+		}
+
+		public POI(String systemName, String name, UniverseService universeService) throws NonUniqueResultException {
+			StarSystem starSystem = universeService.findStarSystemByName(systemName);
+
+			this.systemName = starSystem.getName();
+			this.name = StringUtils.isEmpty(name) ? starSystem.getName() : name;
+			this.coord = starSystem.getCoord();
+		}
+
+		public String getSystemName() {
+			return systemName;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public Coord getCoord() {
+			return coord;
+		}
+
+	}
+
 	public static class Area extends JPanel implements MouseWheelListener {
 
 		private static final long serialVersionUID = 8383226308842901529L;
 
 		private final CommanderData commanderData;
 		private final Map<String, OtherCommanderLocation> otherCommanders;
+
+		private final List<POI> POIS = new ArrayList<>();
 
 		private UniverseService universeService = null;
 
@@ -571,6 +608,64 @@ public class DiscoveryPanel extends JPanel {
 			this.otherCommanders = otherCommanders;
 
 			this.universeService = appctx.getBean(UniverseService.class);
+
+			try {
+				this.POIS.add(new POI("Sol", universeService));
+				this.POIS.add(new POI("Colonia", universeService));
+				this.POIS.add(new POI("Sagittarius A*", universeService));
+				this.POIS.add(new POI("Maia", universeService));
+				this.POIS.add(new POI("Betelgeuse", universeService));
+				this.POIS.add(new POI("VY Canis Majoris", universeService));
+				this.POIS.add(new POI("Crab Pulsar", universeService));
+
+				this.POIS.add(new POI("Maridal", universeService));
+
+				this.POIS.add(new POI("Spliehm HW-Y b55-0", "BC#2", universeService));
+				this.POIS.add(new POI("Phooe Euq XQ-G c10-0", "BC#3", universeService));
+
+				this.POIS.add(new POI("HIP 23759", "WP#0", universeService));
+				this.POIS.add(new POI("Crab Sector DL-Y d9", "WP#1", universeService));
+				this.POIS.add(new POI("3 Geminorum", "WP#2", universeService));
+				this.POIS.add(new POI("Angosk DL-P d5-0", "WP#3", universeService));
+				this.POIS.add(new POI("Angosk OM-W d1-0", "WP#4", universeService));
+				this.POIS.add(new POI("Lyed YJ-I d9-0", "WP#5", universeService));
+				this.POIS.add(new POI("Hypuae Euq ZK-P d5-0", "WP#6", universeService));
+				this.POIS.add(new POI("Aicods KD-K d8-3", "WP#7", universeService));
+				this.POIS.add(new POI("Syroifoe CL-Y g1", "WP#8", universeService));
+				this.POIS.add(new POI("HIP 117078", "WP#9", universeService));
+				this.POIS.add(new POI("Spongou FA-A e2", "WP#10", universeService));
+				this.POIS.add(new POI("Cyuefai BC-D d12-4", "WP#11", universeService));
+				this.POIS.add(new POI("Cyuefoo LC-D d12-0", "WP#12", universeService));
+				this.POIS.add(new POI("Byaa Thoi EW-E d11-0", "WP#13", universeService));
+				this.POIS.add(new POI("Byaa Thoi GC-D d12-0", "WP#14", universeService));
+				this.POIS.add(new POI("Auzorts NR-N d6-0", "WP#15", universeService));
+				this.POIS.add(new POI("Lyruewry BK-R d4-12", "WP#16", universeService));
+				this.POIS.add(new POI("Hypou Chreou RS-S c17-6", "WP#17", universeService));
+				this.POIS.add(new POI("Hypiae Brue DI-D c12-0", "WP#18", universeService));
+				this.POIS.add(new POI("Sphiesi HX-L d7-0", "WP#19", universeService));
+				this.POIS.add(new POI("Flyae Proae IN-S e4-1", "WP#20", universeService));
+				this.POIS.add(new POI("Footie AA-A g0", "WP#21", universeService));
+				this.POIS.add(new POI("Oedgaf DL-Y g0", "WP#22", universeService));
+				this.POIS.add(new POI("Gria Bloae YE-A g0", "WP#23", universeService));
+				this.POIS.add(new POI("Exahn AZ-S d3-8", "WP#24", universeService));
+				this.POIS.add(new POI("Chua Eop ZC-T c20-0", "WP#25", universeService));
+				this.POIS.add(new POI("Beagle Point", "WP#26", universeService));
+				this.POIS.add(new POI("Cheae Eurl AA-A e0", "WP#27", universeService));
+				this.POIS.add(new POI("Hyphielia QH-K c22-0", "WP#28", universeService));
+				this.POIS.add(new POI("Praei Bre WO-R d4-3", "WP#29", universeService));
+				this.POIS.add(new POI("Suvua FG-Y f0", "WP#30", universeService));
+				this.POIS.add(new POI("Hypaa Byio ZE-A g1", "WP#31", universeService));
+				this.POIS.add(new POI("Eembaitl DL-Y d13", "WP#32", universeService));
+				this.POIS.add(new POI("Synookaea MX-L d7-0", "WP#33", universeService));
+				this.POIS.add(new POI("Blea Airgh EI-B d13-1", "WP#34", universeService));
+				this.POIS.add(new POI("Ood Fleau ZJ-I d9-0", "WP#35", universeService));
+				this.POIS.add(new POI("Plae Eur DW-E d11-0", "WP#36", universeService));
+				this.POIS.add(new POI("Haffner 18 LSS 27", "WP#37", universeService));
+				this.POIS.add(new POI("Achrende", "WP#38", universeService));
+			} catch (NonUniqueResultException e) {
+				// TODO Auto-generated catch block
+				throw new RuntimeException(e);
+			}
 
 			this.addMouseWheelListener(this);
 		}
@@ -673,6 +768,20 @@ public class DiscoveryPanel extends JPanel {
 					g.setColor(new Color(0, 255, 255, alpha));
 					//g.fillRect(p.x - poffset, p.y - poffset, psize, psize);
 					g.drawString(location.getCommanderName(), p.x, p.y);
+				}
+			}
+
+			// POIs
+			logger.trace("Painting POIs");
+			for (POI poi : POIS) {
+				Point p = this.coordToPoint(poi.getCoord());
+				float dy = Math.abs(poi.getCoord().getY() - coord.getY());
+				int alpha = 255 - Math.round((dy / (ysize / 2)) * 127);
+
+				if (alpha > 0) {
+					g.setColor(new Color(0, 255, 0, alpha));
+					//g.fillRect(p.x - poffset, p.y - poffset, psize, psize);
+					g.drawString(poi.getName(), p.x, p.y);
 				}
 			}
 
