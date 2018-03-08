@@ -139,6 +139,7 @@ public class DiscoveryPanel extends JPanel {
 		logger.trace("Searching for valuable bodies in " + this.commanderData.getCurrentStarSystem());
 		this.txtValuableBodies.setText(knownBodies.stream() //
 				.filter(b -> BodyUtil.estimatePayout(b) >= 50_000) //
+				.filter(b -> !this.commanderData.scannedBody(b.getName())) //
 				.sorted((b1, b2) -> -1 * new Long(BodyUtil.estimatePayout(b1)).compareTo(BodyUtil.estimatePayout(b2))) //
 				.map(b -> String.format(Locale.US, "%s: %,d CR", b.getName().replace(b.getStarSystemName(), "").trim(), BodyUtil.estimatePayout(b))) //
 				.collect(Collectors.joining(", ")));
@@ -401,7 +402,7 @@ public class DiscoveryPanel extends JPanel {
 			for (String starSystemName : starSystemNames) {
 				if (this.knownPayouts.containsKey(starSystemName)) {
 					long systemPayout = this.knownPayouts.get(starSystemName);
-					if (systemPayout >= minValue && !commanderData.getVisitedStarSystems().stream().anyMatch(vss -> vss.getName().equals(starSystemName))) {
+					if (systemPayout >= minValue && !commanderData.visitedStarSystem(starSystemName)) {
 						valueBySystem.put(starSystemName, systemPayout);
 					}
 				} else {
@@ -622,6 +623,13 @@ public class DiscoveryPanel extends JPanel {
 
 				this.POIS.add(new POI("Spliehm HW-Y b55-0", "BC#2", universeService));
 				this.POIS.add(new POI("Phooe Euq XQ-G c10-0", "BC#3", universeService));
+				this.POIS.add(new POI("Phoi Eur QM-W d1-4", "BC#4", universeService));
+				//this.POIS.add(new POI("Aicods KD-K d8-3", "BC#5", universeService));
+				this.POIS.add(new POI("Tradgoe ZU-X e1-0", "BC#6", universeService));
+				this.POIS.add(new POI("Pra Eorg HC-B d1-0", "BC#7", universeService));
+				this.POIS.add(new POI("Auzorts AJ-B c13-0", "BC#8", universeService));
+				this.POIS.add(new POI("Eor Chreou KL-V c16-0", "BC#9", universeService));
+				this.POIS.add(new POI("Sphieso UE-R d4-5", "BC#10", universeService));
 
 				this.POIS.add(new POI("HIP 23759", "WP#0", universeService));
 				this.POIS.add(new POI("Crab Sector DL-Y d9", "WP#1", universeService));
