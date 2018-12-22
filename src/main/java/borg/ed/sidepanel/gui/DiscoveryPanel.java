@@ -630,6 +630,9 @@ public class DiscoveryPanel extends JPanel {
 				this.POIS.add(new POI("Auzorts AJ-B c13-0", "BC#8", universeService));
 				this.POIS.add(new POI("Eor Chreou KL-V c16-0", "BC#9", universeService));
 				this.POIS.add(new POI("Sphieso UE-R d4-5", "BC#10", universeService));
+				this.POIS.add(new POI("Oombairps DB-U d4-8", "BC#11", universeService));
+				this.POIS.add(new POI("Nyaugnaae EF-D c1-0", "BC#12", universeService));
+				this.POIS.add(new POI("Exahn BZ-S d3-13", "BC#13", universeService));
 
 				this.POIS.add(new POI("HIP 23759", "WP#0", universeService));
 				this.POIS.add(new POI("Crab Sector DL-Y d9", "WP#1", universeService));
