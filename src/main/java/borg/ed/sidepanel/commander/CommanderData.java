@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -159,11 +158,11 @@ public class CommanderData {
 		this.setCurrentCoord(event.getStarPos());
 		this.setCurrentStarSystem(event.getStarSystem());
 		this.setCurrentBody(null);
-		this.setSystemFaction(event.getSystemFaction());
+		this.setSystemFaction(event.getSystemFaction() == null ? null : event.getSystemFaction().getName());
 		this.setSystemAllegiance(event.getSystemAllegiance());
 		this.setSystemEconomy(event.getSystemEconomy());
 		this.setSystemState(null);
-		if (StringUtils.isNotEmpty(event.getSystemFaction()) && event.getFactions() != null) {
+		if (event.getFactions() != null) {
 			for (Faction faction : event.getFactions()) {
 				if (event.getSystemFaction().equals(faction.getName())) {
 					this.setSystemState(faction.getFactionState());

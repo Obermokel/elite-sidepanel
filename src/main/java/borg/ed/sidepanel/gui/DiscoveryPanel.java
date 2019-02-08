@@ -425,7 +425,7 @@ public class DiscoveryPanel extends JPanel {
 
 					List<Body> bodies = this.universeService.findBodiesByStarSystemName(starSystemName);
 					for (Body body : bodies) {
-						if (body.getDistanceToArrival() != null && body.getDistanceToArrival().longValue() <= maxDistanceFromArrival) {
+						if (body.getDistanceToArrivalLs() != null && body.getDistanceToArrivalLs().longValue() <= maxDistanceFromArrival) {
 							systemPayout += BodyUtil.estimatePayout(body.getStarClass(), body.getPlanetClass(),
 									TerraformingState.TERRAFORMABLE.equals(body.getTerraformingState()));
 						}
