@@ -19,13 +19,13 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
+import borg.ed.galaxy.GalaxyApplication;
+import borg.ed.galaxy.journal.JournalEventReader;
+import borg.ed.galaxy.journal.events.AbstractJournalEvent;
+import borg.ed.galaxy.journal.events.LoadGameEvent;
 import borg.ed.sidepanel.commander.CommanderData;
 import borg.ed.sidepanel.commander.OtherCommanderLocation;
 import borg.ed.sidepanel.gui.SidePanelFrame;
-import borg.ed.universe.UniverseApplication;
-import borg.ed.universe.journal.JournalEventReader;
-import borg.ed.universe.journal.events.AbstractJournalEvent;
-import borg.ed.universe.journal.events.LoadGameEvent;
 
 /**
  * SidepanelApplication
@@ -33,7 +33,7 @@ import borg.ed.universe.journal.events.LoadGameEvent;
  * @author <a href="mailto:b.guenther@xsite.de">Boris Guenther</a>
  */
 @Configuration
-@Import(UniverseApplication.class)
+@Import(GalaxyApplication.class)
 public class SidepanelApplication {
 
 	static final Logger logger = LoggerFactory.getLogger(SidepanelApplication.class);

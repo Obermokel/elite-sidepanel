@@ -1,10 +1,11 @@
 package borg.ed.sidepanel.commander;
 
-import borg.ed.universe.data.Coord;
 import lombok.Getter;
 import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import borg.ed.galaxy.data.Coord;
 
 import java.io.Serializable;
 import java.time.ZonedDateTime;

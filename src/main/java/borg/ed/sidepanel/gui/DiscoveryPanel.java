@@ -39,22 +39,22 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.util.CloseableIterator;
 
+import borg.ed.galaxy.constants.Element;
+import borg.ed.galaxy.constants.PlanetClass;
+import borg.ed.galaxy.constants.StarClass;
+import borg.ed.galaxy.constants.TerraformingState;
+import borg.ed.galaxy.data.Coord;
+import borg.ed.galaxy.exceptions.NonUniqueResultException;
+import borg.ed.galaxy.model.Body;
+import borg.ed.galaxy.model.Body.MaterialShare;
+import borg.ed.galaxy.model.StarSystem;
+import borg.ed.galaxy.service.GalaxyService;
+import borg.ed.galaxy.util.BodyUtil;
+import borg.ed.galaxy.util.MiscUtil;
+import borg.ed.galaxy.util.StarUtil;
 import borg.ed.sidepanel.commander.CommanderData;
 import borg.ed.sidepanel.commander.OtherCommanderLocation;
 import borg.ed.sidepanel.commander.VisitedStarSystem;
-import borg.ed.universe.constants.Element;
-import borg.ed.universe.constants.PlanetClass;
-import borg.ed.universe.constants.StarClass;
-import borg.ed.universe.constants.TerraformingState;
-import borg.ed.universe.data.Coord;
-import borg.ed.universe.exceptions.NonUniqueResultException;
-import borg.ed.universe.model.Body;
-import borg.ed.universe.model.Body.MaterialShare;
-import borg.ed.universe.model.StarSystem;
-import borg.ed.universe.service.UniverseService;
-import borg.ed.universe.util.BodyUtil;
-import borg.ed.universe.util.MiscUtil;
-import borg.ed.universe.util.StarUtil;
 
 /**
  * DiscoveryPanel
@@ -69,7 +69,7 @@ public class DiscoveryPanel extends JPanel {
 
 	private final CommanderData commanderData;
 
-	private UniverseService universeService = null;
+	private GalaxyService galaxyService = null;
 	private Set<String> populatedSystems = new HashSet<>();
 	private Map<String, Long> knownPayouts = new HashMap<>();
 
@@ -83,7 +83,7 @@ public class DiscoveryPanel extends JPanel {
 	public DiscoveryPanel(ApplicationContext appctx, CommanderData commanderData, Map<String, OtherCommanderLocation> otherCommanders) {
 		this.commanderData = commanderData;
 
-		this.universeService = appctx.getBean(UniverseService.class);
+		this.galaxyService = appctx.getBean(GalaxyService.class);
 
 		this.setLayout(new BorderLayout());
 
@@ -128,7 +128,7 @@ public class DiscoveryPanel extends JPanel {
 		}
 
 		logger.trace("Searching for known bodies in " + this.commanderData.getCurrentStarSystem());
-		List<Body> knownBodies = this.universeService.findBodiesByStarSystemName(this.commanderData.getCurrentStarSystem());
+		List<Body> knownBodies = this.galaxyService.findBodiesByStarSystemName(this.commanderData.getCurrentStarSystem());
 		this.txtKnownBodies.setText(knownBodies.stream() //
 				.filter(b -> !b.getName().toLowerCase().contains("belt")) //
 				.sorted((b1, b2) -> b1.getName().toLowerCase().compareTo(b2.getName().toLowerCase())) //
@@ -153,13 +153,12 @@ public class DiscoveryPanel extends JPanel {
 		this.txtClosestNeutronStars.setText(neutronStarsText.toString().trim());
 
 		StringBuilder valuableSystemsText = new StringBuilder();
-		LinkedHashMap<String, Long> valuableSystems = this.findNearbyValuableSystems(coord, /* range = */ Math.min(500f, this.getVisibleDistance()),
-				this.commanderData);
+		LinkedHashMap<String, Long> valuableSystems = this.findNearbyValuableSystems(coord, /* range = */ Math.min(500f, this.getVisibleDistance()), this.commanderData);
 		int counter = 0;
 		for (String systemName : valuableSystems.keySet()) {
 			float distance = 0f;
 			try {
-				StarSystem starSystem = this.universeService.findStarSystemByName(systemName);
+				StarSystem starSystem = this.galaxyService.findStarSystemByName(systemName);
 				distance = starSystem == null || starSystem.getCoord() == null ? 0f : starSystem.getCoord().distanceTo(coord);
 			} catch (NonUniqueResultException e) {
 				// Ignore
@@ -190,8 +189,7 @@ public class DiscoveryPanel extends JPanel {
 			Body body = jumponiumRichBodies.get(i);
 			String mats = body.getMaterialShares().stream() //
 					.filter(sh -> sh.getPercent() != null && sh.getPercent().floatValue() > 0) //
-					.filter(sh -> Element.POLONIUM.equals(sh.getName()) || Element.YTTRIUM.equals(sh.getName()) || Element.NIOBIUM.equals(sh.getName())
-							|| Element.ARSENIC.equals(sh.getName())) //
+					.filter(sh -> Element.POLONIUM.equals(sh.getName()) || Element.YTTRIUM.equals(sh.getName()) || Element.NIOBIUM.equals(sh.getName()) || Element.ARSENIC.equals(sh.getName())) //
 					.sorted((sh1, sh2) -> sh1.getName().name().compareTo(sh2.getName().name())) //
 					.map(sh -> String.format(Locale.US, "%.1f%% %s", sh.getPercent().floatValue(), sh.getName().name().substring(0, 3))) //
 					.collect(Collectors.joining(", "));
@@ -223,8 +221,7 @@ public class DiscoveryPanel extends JPanel {
 		try {
 			logger.trace("Searching for neutron stars " + range + " Ly around " + coord);
 
-			try (CloseableIterator<Body> stream = this.universeService.streamStarsNear(coord, range, /* isMainStar = */ Boolean.TRUE,
-					Arrays.asList(StarClass.N))) {
+			try (CloseableIterator<Body> stream = this.galaxyService.streamStarsNear(coord, range, /* isMainStar = */ Boolean.TRUE, Arrays.asList(StarClass.N))) {
 				stream.forEachRemaining(body -> {
 					if (body.getStarClass() != null) {
 						result.add(body);
@@ -267,14 +264,13 @@ public class DiscoveryPanel extends JPanel {
 			MaterialShare van = new MaterialShare();
 			van.setName(Element.VANADIUM);
 
-			Page<Body> page = this.universeService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(g5, nio, ars, cad, ger, van),
-					PageRequest.of(0, 10000));
+			Page<Body> page = this.galaxyService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(g5, nio, ars, cad, ger, van), PageRequest.of(0, 10000));
 			while (page != null) {
 				for (Body body : page.getContent()) {
 					result.add(body);
 				}
 				if (page.hasNext() && page.getNumber() + 1 < 10000 / page.getSize()) {
-					page = this.universeService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(g5, nio, ars, cad, ger, van), page.nextPageable());
+					page = this.galaxyService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(g5, nio, ars, cad, ger, van), page.nextPageable());
 				} else {
 					page = null;
 				}
@@ -316,7 +312,7 @@ public class DiscoveryPanel extends JPanel {
 			ars.setPercent(new BigDecimal("2.0"));
 
 			// Polonium
-			Page<Body> page = this.universeService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(pol, nio, ars), PageRequest.of(0, 10000));
+			Page<Body> page = this.galaxyService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(pol, nio, ars), PageRequest.of(0, 10000));
 			while (page != null) {
 				for (Body body : page.getContent()) {
 					if (!result.contains(body)) {
@@ -324,14 +320,14 @@ public class DiscoveryPanel extends JPanel {
 					}
 				}
 				if (page.hasNext() && page.getNumber() + 1 < 10000 / page.getSize()) {
-					page = this.universeService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(pol, nio, ars), page.nextPageable());
+					page = this.galaxyService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(pol, nio, ars), page.nextPageable());
 				} else {
 					page = null;
 				}
 			}
 
 			// Yttrium
-			page = this.universeService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(ytt, nio, ars), PageRequest.of(0, 10000));
+			page = this.galaxyService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(ytt, nio, ars), PageRequest.of(0, 10000));
 			while (page != null) {
 				for (Body body : page.getContent()) {
 					if (!result.contains(body)) {
@@ -339,7 +335,7 @@ public class DiscoveryPanel extends JPanel {
 					}
 				}
 				if (page.hasNext() && page.getNumber() + 1 < 10000 / page.getSize()) {
-					page = this.universeService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(ytt, nio, ars), page.nextPageable());
+					page = this.galaxyService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(ytt, nio, ars), page.nextPageable());
 				} else {
 					page = null;
 				}
@@ -377,23 +373,21 @@ public class DiscoveryPanel extends JPanel {
 			Set<String> starSystemNames = new HashSet<>();
 
 			List<PlanetClass> elwWwAw = Arrays.asList(PlanetClass.EARTHLIKE_BODY, PlanetClass.WATER_WORLD, PlanetClass.AMMONIA_WORLD);
-			Page<Body> page = this.universeService.findPlanetsNear(coord, range, /* isTerraformingCandidate = */ null, elwWwAw, PageRequest.of(0, 10000));
+			Page<Body> page = this.galaxyService.findPlanetsNear(coord, range, /* isTerraformingCandidate = */ null, elwWwAw, PageRequest.of(0, 10000));
 			while (page != null) {
-				starSystemNames.addAll(
-						page.getContent().stream().map(Body::getStarSystemName).filter(name -> StringUtils.isNotEmpty(name)).collect(Collectors.toList()));
+				starSystemNames.addAll(page.getContent().stream().map(Body::getStarSystemName).filter(name -> StringUtils.isNotEmpty(name)).collect(Collectors.toList()));
 				if (page.hasNext() && page.getNumber() + 1 < 10000 / page.getSize()) {
-					page = this.universeService.findPlanetsNear(coord, range, /* isTerraformingCandidate = */ null, elwWwAw, page.nextPageable());
+					page = this.galaxyService.findPlanetsNear(coord, range, /* isTerraformingCandidate = */ null, elwWwAw, page.nextPageable());
 				} else {
 					page = null;
 				}
 			}
 
-			page = this.universeService.findPlanetsNear(coord, range, /* isTerraformingCandidate = */ Boolean.TRUE, null, PageRequest.of(0, 10000));
+			page = this.galaxyService.findPlanetsNear(coord, range, /* isTerraformingCandidate = */ Boolean.TRUE, null, PageRequest.of(0, 10000));
 			while (page != null) {
-				starSystemNames.addAll(
-						page.getContent().stream().map(Body::getStarSystemName).filter(name -> StringUtils.isNotEmpty(name)).collect(Collectors.toList()));
+				starSystemNames.addAll(page.getContent().stream().map(Body::getStarSystemName).filter(name -> StringUtils.isNotEmpty(name)).collect(Collectors.toList()));
 				if (page.hasNext() && page.getNumber() + 1 < 10000 / page.getSize()) {
-					page = this.universeService.findPlanetsNear(coord, range, /* isTerraformingCandidate = */ Boolean.TRUE, null, page.nextPageable());
+					page = this.galaxyService.findPlanetsNear(coord, range, /* isTerraformingCandidate = */ Boolean.TRUE, null, page.nextPageable());
 				} else {
 					page = null;
 				}
@@ -415,7 +409,7 @@ public class DiscoveryPanel extends JPanel {
 						continue; // Assume already scanned
 					}
 
-					StarSystem starSystem = this.universeService.findStarSystemByName(starSystemName);
+					StarSystem starSystem = this.galaxyService.findStarSystemByName(starSystemName);
 					if (starSystem != null && starSystem.getPopulation() != null && starSystem.getPopulation().longValue() > 0) {
 						this.populatedSystems.add(starSystemName);
 						continue; // Public knowledge
@@ -423,11 +417,10 @@ public class DiscoveryPanel extends JPanel {
 
 					long systemPayout = 0L;
 
-					List<Body> bodies = this.universeService.findBodiesByStarSystemName(starSystemName);
+					List<Body> bodies = this.galaxyService.findBodiesByStarSystemName(starSystemName);
 					for (Body body : bodies) {
 						if (body.getDistanceToArrivalLs() != null && body.getDistanceToArrivalLs().longValue() <= maxDistanceFromArrival) {
-							systemPayout += BodyUtil.estimatePayout(body.getStarClass(), body.getPlanetClass(),
-									TerraformingState.TERRAFORMABLE.equals(body.getTerraformingState()));
+							systemPayout += BodyUtil.estimatePayout(body.getStarClass(), body.getPlanetClass(), TerraformingState.TERRAFORMABLE.equals(body.getTerraformingState()));
 						}
 					}
 
@@ -464,7 +457,7 @@ public class DiscoveryPanel extends JPanel {
 			Set<String> yttriumSystemNames = new HashSet<>();
 
 			// Polonium
-			Page<Body> page = this.universeService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(pol), PageRequest.of(0, 10000));
+			Page<Body> page = this.galaxyService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(pol), PageRequest.of(0, 10000));
 			while (page != null) {
 				for (Body body : page.getContent()) {
 					if (StringUtils.isNotEmpty(body.getStarSystemName())) {
@@ -472,14 +465,14 @@ public class DiscoveryPanel extends JPanel {
 					}
 				}
 				if (page.hasNext() && page.getNumber() + 1 < 10000 / page.getSize()) {
-					page = this.universeService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(pol), page.nextPageable());
+					page = this.galaxyService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(pol), page.nextPageable());
 				} else {
 					page = null;
 				}
 			}
 
 			// Yttrium
-			page = this.universeService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(ytt), PageRequest.of(0, 10000));
+			page = this.galaxyService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(ytt), PageRequest.of(0, 10000));
 			while (page != null) {
 				for (Body body : page.getContent()) {
 					if (StringUtils.isNotEmpty(body.getStarSystemName())) {
@@ -487,7 +480,7 @@ public class DiscoveryPanel extends JPanel {
 					}
 				}
 				if (page.hasNext() && page.getNumber() + 1 < 10000 / page.getSize()) {
-					page = this.universeService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(ytt), page.nextPageable());
+					page = this.galaxyService.findPlanetsHavingElementsNear(coord, range, Arrays.asList(ytt), page.nextPageable());
 				} else {
 					page = null;
 				}
@@ -498,7 +491,7 @@ public class DiscoveryPanel extends JPanel {
 			systemNames.retainAll(yttriumSystemNames);
 
 			for (String systemName : systemNames) {
-				StarSystem starSystem = this.universeService.findStarSystemByName(systemName);
+				StarSystem starSystem = this.galaxyService.findStarSystemByName(systemName);
 				if (starSystem != null) {
 					Map<Element, BigDecimal> totalMaterials = this.sumMaterialsOfSystem(systemName);
 					BigDecimal polonium = totalMaterials.getOrDefault(Element.POLONIUM, BigDecimal.ZERO);
@@ -509,8 +502,8 @@ public class DiscoveryPanel extends JPanel {
 					BigDecimal germanium = totalMaterials.getOrDefault(Element.GERMANIUM, BigDecimal.ZERO);
 					BigDecimal vanadium = totalMaterials.getOrDefault(Element.VANADIUM, BigDecimal.ZERO);
 
-					if (polonium.floatValue() >= 1.5 && yttrium.floatValue() >= 2 && cadmium.floatValue() > 0 && niobium.floatValue() > 0
-							&& arsenic.floatValue() > 0 && germanium.floatValue() > 0 && vanadium.floatValue() > 0) {
+					if (polonium.floatValue() >= 1.5 && yttrium.floatValue() >= 2 && cadmium.floatValue() > 0 && niobium.floatValue() > 0 && arsenic.floatValue() > 0
+							&& germanium.floatValue() > 0 && vanadium.floatValue() > 0) {
 						result.add(starSystem);
 					}
 				}
@@ -535,7 +528,7 @@ public class DiscoveryPanel extends JPanel {
 	private Map<Element, BigDecimal> sumMaterialsOfSystem(String systemName) {
 		final Map<Element, BigDecimal> result = new TreeMap<>();
 
-		List<Body> bodies = this.universeService.findBodiesByStarSystemName(systemName);
+		List<Body> bodies = this.galaxyService.findBodiesByStarSystemName(systemName);
 		for (Body body : bodies) {
 			if (body.getMaterialShares() != null) {
 				body.getMaterialShares().stream().filter(sh -> sh.getPercent() != null).forEach(sh -> {
@@ -556,12 +549,12 @@ public class DiscoveryPanel extends JPanel {
 		private final String name;
 		private final Coord coord;
 
-		public POI(String systemName, UniverseService universeService) throws NonUniqueResultException {
-			this(systemName, null, universeService);
+		public POI(String systemName, GalaxyService galaxyService) throws NonUniqueResultException {
+			this(systemName, null, galaxyService);
 		}
 
-		public POI(String systemName, String name, UniverseService universeService) throws NonUniqueResultException {
-			StarSystem starSystem = universeService.findStarSystemByName(systemName);
+		public POI(String systemName, String name, GalaxyService galaxyService) throws NonUniqueResultException {
+			StarSystem starSystem = galaxyService.findStarSystemByName(systemName);
 
 			this.systemName = starSystem.getName();
 			this.name = StringUtils.isEmpty(name) ? starSystem.getName() : name;
@@ -591,7 +584,7 @@ public class DiscoveryPanel extends JPanel {
 
 		private final List<POI> POIS = new ArrayList<>();
 
-		private UniverseService universeService = null;
+		private GalaxyService galaxyService = null;
 
 		float zoom = 100f;
 		float xsize = 0f;
@@ -608,71 +601,71 @@ public class DiscoveryPanel extends JPanel {
 			this.commanderData = commanderData;
 			this.otherCommanders = otherCommanders;
 
-			this.universeService = appctx.getBean(UniverseService.class);
+			this.galaxyService = appctx.getBean(GalaxyService.class);
 
 			try {
-				this.POIS.add(new POI("Sol", universeService));
-				this.POIS.add(new POI("Colonia", universeService));
-				this.POIS.add(new POI("Sagittarius A*", universeService));
-				this.POIS.add(new POI("Maia", universeService));
-				this.POIS.add(new POI("Betelgeuse", universeService));
-				this.POIS.add(new POI("VY Canis Majoris", universeService));
-				this.POIS.add(new POI("Crab Pulsar", universeService));
+				this.POIS.add(new POI("Sol", galaxyService));
+				this.POIS.add(new POI("Colonia", galaxyService));
+				this.POIS.add(new POI("Sagittarius A*", galaxyService));
+				this.POIS.add(new POI("Maia", galaxyService));
+				this.POIS.add(new POI("Betelgeuse", galaxyService));
+				this.POIS.add(new POI("VY Canis Majoris", galaxyService));
+				this.POIS.add(new POI("Crab Pulsar", galaxyService));
 
-				this.POIS.add(new POI("Maridal", universeService));
+				this.POIS.add(new POI("Maridal", galaxyService));
 
-				this.POIS.add(new POI("Spliehm HW-Y b55-0", "BC#2", universeService));
-				this.POIS.add(new POI("Phooe Euq XQ-G c10-0", "BC#3", universeService));
-				this.POIS.add(new POI("Phoi Eur QM-W d1-4", "BC#4", universeService));
-				//this.POIS.add(new POI("Aicods KD-K d8-3", "BC#5", universeService));
-				this.POIS.add(new POI("Tradgoe ZU-X e1-0", "BC#6", universeService));
-				this.POIS.add(new POI("Pra Eorg HC-B d1-0", "BC#7", universeService));
-				this.POIS.add(new POI("Auzorts AJ-B c13-0", "BC#8", universeService));
-				this.POIS.add(new POI("Eor Chreou KL-V c16-0", "BC#9", universeService));
-				this.POIS.add(new POI("Sphieso UE-R d4-5", "BC#10", universeService));
-				this.POIS.add(new POI("Oombairps DB-U d4-8", "BC#11", universeService));
-				this.POIS.add(new POI("Nyaugnaae EF-D c1-0", "BC#12", universeService));
-				this.POIS.add(new POI("Exahn BZ-S d3-13", "BC#13", universeService));
+				this.POIS.add(new POI("Spliehm HW-Y b55-0", "BC#2", galaxyService));
+				this.POIS.add(new POI("Phooe Euq XQ-G c10-0", "BC#3", galaxyService));
+				this.POIS.add(new POI("Phoi Eur QM-W d1-4", "BC#4", galaxyService));
+				//this.POIS.add(new POI("Aicods KD-K d8-3", "BC#5", galaxyService));
+				this.POIS.add(new POI("Tradgoe ZU-X e1-0", "BC#6", galaxyService));
+				this.POIS.add(new POI("Pra Eorg HC-B d1-0", "BC#7", galaxyService));
+				this.POIS.add(new POI("Auzorts AJ-B c13-0", "BC#8", galaxyService));
+				this.POIS.add(new POI("Eor Chreou KL-V c16-0", "BC#9", galaxyService));
+				this.POIS.add(new POI("Sphieso UE-R d4-5", "BC#10", galaxyService));
+				this.POIS.add(new POI("Oombairps DB-U d4-8", "BC#11", galaxyService));
+				this.POIS.add(new POI("Nyaugnaae EF-D c1-0", "BC#12", galaxyService));
+				this.POIS.add(new POI("Exahn BZ-S d3-13", "BC#13", galaxyService));
 
-				this.POIS.add(new POI("HIP 23759", "WP#0", universeService));
-				this.POIS.add(new POI("Crab Sector DL-Y d9", "WP#1", universeService));
-				this.POIS.add(new POI("3 Geminorum", "WP#2", universeService));
-				this.POIS.add(new POI("Angosk DL-P d5-0", "WP#3", universeService));
-				this.POIS.add(new POI("Angosk OM-W d1-0", "WP#4", universeService));
-				this.POIS.add(new POI("Lyed YJ-I d9-0", "WP#5", universeService));
-				this.POIS.add(new POI("Hypuae Euq ZK-P d5-0", "WP#6", universeService));
-				this.POIS.add(new POI("Aicods KD-K d8-3", "WP#7", universeService));
-				this.POIS.add(new POI("Syroifoe CL-Y g1", "WP#8", universeService));
-				this.POIS.add(new POI("HIP 117078", "WP#9", universeService));
-				this.POIS.add(new POI("Spongou FA-A e2", "WP#10", universeService));
-				this.POIS.add(new POI("Cyuefai BC-D d12-4", "WP#11", universeService));
-				this.POIS.add(new POI("Cyuefoo LC-D d12-0", "WP#12", universeService));
-				this.POIS.add(new POI("Byaa Thoi EW-E d11-0", "WP#13", universeService));
-				this.POIS.add(new POI("Byaa Thoi GC-D d12-0", "WP#14", universeService));
-				this.POIS.add(new POI("Auzorts NR-N d6-0", "WP#15", universeService));
-				this.POIS.add(new POI("Lyruewry BK-R d4-12", "WP#16", universeService));
-				this.POIS.add(new POI("Hypou Chreou RS-S c17-6", "WP#17", universeService));
-				this.POIS.add(new POI("Hypiae Brue DI-D c12-0", "WP#18", universeService));
-				this.POIS.add(new POI("Sphiesi HX-L d7-0", "WP#19", universeService));
-				this.POIS.add(new POI("Flyae Proae IN-S e4-1", "WP#20", universeService));
-				this.POIS.add(new POI("Footie AA-A g0", "WP#21", universeService));
-				this.POIS.add(new POI("Oedgaf DL-Y g0", "WP#22", universeService));
-				this.POIS.add(new POI("Gria Bloae YE-A g0", "WP#23", universeService));
-				this.POIS.add(new POI("Exahn AZ-S d3-8", "WP#24", universeService));
-				this.POIS.add(new POI("Chua Eop ZC-T c20-0", "WP#25", universeService));
-				this.POIS.add(new POI("Beagle Point", "WP#26", universeService));
-				this.POIS.add(new POI("Cheae Eurl AA-A e0", "WP#27", universeService));
-				this.POIS.add(new POI("Hyphielia QH-K c22-0", "WP#28", universeService));
-				this.POIS.add(new POI("Praei Bre WO-R d4-3", "WP#29", universeService));
-				this.POIS.add(new POI("Suvua FG-Y f0", "WP#30", universeService));
-				this.POIS.add(new POI("Hypaa Byio ZE-A g1", "WP#31", universeService));
-				this.POIS.add(new POI("Eembaitl DL-Y d13", "WP#32", universeService));
-				this.POIS.add(new POI("Synookaea MX-L d7-0", "WP#33", universeService));
-				this.POIS.add(new POI("Blea Airgh EI-B d13-1", "WP#34", universeService));
-				this.POIS.add(new POI("Ood Fleau ZJ-I d9-0", "WP#35", universeService));
-				this.POIS.add(new POI("Plae Eur DW-E d11-0", "WP#36", universeService));
-				this.POIS.add(new POI("Haffner 18 LSS 27", "WP#37", universeService));
-				this.POIS.add(new POI("Achrende", "WP#38", universeService));
+				this.POIS.add(new POI("HIP 23759", "WP#0", galaxyService));
+				this.POIS.add(new POI("Crab Sector DL-Y d9", "WP#1", galaxyService));
+				this.POIS.add(new POI("3 Geminorum", "WP#2", galaxyService));
+				this.POIS.add(new POI("Angosk DL-P d5-0", "WP#3", galaxyService));
+				this.POIS.add(new POI("Angosk OM-W d1-0", "WP#4", galaxyService));
+				this.POIS.add(new POI("Lyed YJ-I d9-0", "WP#5", galaxyService));
+				this.POIS.add(new POI("Hypuae Euq ZK-P d5-0", "WP#6", galaxyService));
+				this.POIS.add(new POI("Aicods KD-K d8-3", "WP#7", galaxyService));
+				this.POIS.add(new POI("Syroifoe CL-Y g1", "WP#8", galaxyService));
+				this.POIS.add(new POI("HIP 117078", "WP#9", galaxyService));
+				this.POIS.add(new POI("Spongou FA-A e2", "WP#10", galaxyService));
+				this.POIS.add(new POI("Cyuefai BC-D d12-4", "WP#11", galaxyService));
+				this.POIS.add(new POI("Cyuefoo LC-D d12-0", "WP#12", galaxyService));
+				this.POIS.add(new POI("Byaa Thoi EW-E d11-0", "WP#13", galaxyService));
+				this.POIS.add(new POI("Byaa Thoi GC-D d12-0", "WP#14", galaxyService));
+				this.POIS.add(new POI("Auzorts NR-N d6-0", "WP#15", galaxyService));
+				this.POIS.add(new POI("Lyruewry BK-R d4-12", "WP#16", galaxyService));
+				this.POIS.add(new POI("Hypou Chreou RS-S c17-6", "WP#17", galaxyService));
+				this.POIS.add(new POI("Hypiae Brue DI-D c12-0", "WP#18", galaxyService));
+				this.POIS.add(new POI("Sphiesi HX-L d7-0", "WP#19", galaxyService));
+				this.POIS.add(new POI("Flyae Proae IN-S e4-1", "WP#20", galaxyService));
+				this.POIS.add(new POI("Footie AA-A g0", "WP#21", galaxyService));
+				this.POIS.add(new POI("Oedgaf DL-Y g0", "WP#22", galaxyService));
+				this.POIS.add(new POI("Gria Bloae YE-A g0", "WP#23", galaxyService));
+				this.POIS.add(new POI("Exahn AZ-S d3-8", "WP#24", galaxyService));
+				this.POIS.add(new POI("Chua Eop ZC-T c20-0", "WP#25", galaxyService));
+				this.POIS.add(new POI("Beagle Point", "WP#26", galaxyService));
+				this.POIS.add(new POI("Cheae Eurl AA-A e0", "WP#27", galaxyService));
+				this.POIS.add(new POI("Hyphielia QH-K c22-0", "WP#28", galaxyService));
+				this.POIS.add(new POI("Praei Bre WO-R d4-3", "WP#29", galaxyService));
+				this.POIS.add(new POI("Suvua FG-Y f0", "WP#30", galaxyService));
+				this.POIS.add(new POI("Hypaa Byio ZE-A g1", "WP#31", galaxyService));
+				this.POIS.add(new POI("Eembaitl DL-Y d13", "WP#32", galaxyService));
+				this.POIS.add(new POI("Synookaea MX-L d7-0", "WP#33", galaxyService));
+				this.POIS.add(new POI("Blea Airgh EI-B d13-1", "WP#34", galaxyService));
+				this.POIS.add(new POI("Ood Fleau ZJ-I d9-0", "WP#35", galaxyService));
+				this.POIS.add(new POI("Plae Eur DW-E d11-0", "WP#36", galaxyService));
+				this.POIS.add(new POI("Haffner 18 LSS 27", "WP#37", galaxyService));
+				this.POIS.add(new POI("Achrende", "WP#38", galaxyService));
 			} catch (NonUniqueResultException e) {
 				// TODO Auto-generated catch block
 				throw new RuntimeException(e);
@@ -733,7 +726,7 @@ public class DiscoveryPanel extends JPanel {
 
 			// Known systems
 			logger.trace("Painting known systems");
-			try (CloseableIterator<StarSystem> stream = this.universeService.streamAllSystemsWithin(xfrom, xto, yfrom, yto, zfrom, zto)) {
+			try (CloseableIterator<StarSystem> stream = this.galaxyService.streamAllSystemsWithin(xfrom, xto, yfrom, yto, zfrom, zto)) {
 				stream.forEachRemaining(system -> {
 					Point p = this.coordToPoint(system.getCoord());
 					float dy = Math.abs(system.getCoord().getY() - coord.getY());
@@ -749,8 +742,7 @@ public class DiscoveryPanel extends JPanel {
 
 			// Known entry stars
 			logger.trace("Painting known entry stars");
-			try (CloseableIterator<Body> stream = this.universeService.streamStarsWithin(xfrom, xto, yfrom, yto, zfrom, zto, /* isMainStar = */ Boolean.TRUE,
-					/* starClasses = */ null)) {
+			try (CloseableIterator<Body> stream = this.galaxyService.streamStarsWithin(xfrom, xto, yfrom, yto, zfrom, zto, /* isMainStar = */ Boolean.TRUE, /* starClasses = */ null)) {
 				stream.forEachRemaining(mainStar -> {
 					if (mainStar.getStarClass() != null) {
 						Point p = this.coordToPoint(mainStar.getCoord());

@@ -20,19 +20,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 
+import borg.ed.galaxy.data.Coord;
+import borg.ed.galaxy.eddn.EddnBufferThread;
+import borg.ed.galaxy.eddn.EddnReaderThread;
+import borg.ed.galaxy.eddn.EddnUpdateListener;
+import borg.ed.galaxy.journal.JournalReaderThread;
+import borg.ed.galaxy.journal.JournalUpdateListener;
+import borg.ed.galaxy.journal.events.AbstractJournalEvent;
+import borg.ed.galaxy.journal.events.DockedEvent;
+import borg.ed.galaxy.journal.events.FSDJumpEvent;
+import borg.ed.galaxy.journal.events.LocationEvent;
+import borg.ed.galaxy.journal.events.ScanEvent;
 import borg.ed.sidepanel.SidepanelApplication;
 import borg.ed.sidepanel.commander.CommanderData;
 import borg.ed.sidepanel.commander.OtherCommanderLocation;
-import borg.ed.universe.data.Coord;
-import borg.ed.universe.eddn.EddnReaderThread;
-import borg.ed.universe.eddn.EddnUpdateListener;
-import borg.ed.universe.journal.JournalReaderThread;
-import borg.ed.universe.journal.JournalUpdateListener;
-import borg.ed.universe.journal.events.AbstractJournalEvent;
-import borg.ed.universe.journal.events.DockedEvent;
-import borg.ed.universe.journal.events.FSDJumpEvent;
-import borg.ed.universe.journal.events.LocationEvent;
-import borg.ed.universe.journal.events.ScanEvent;
 
 /**
  * SidePanelFrame
@@ -47,6 +48,7 @@ public class SidePanelFrame extends JFrame implements WindowListener, JournalUpd
 
 	private final JournalReaderThread journalReaderThread;
 	private final EddnReaderThread eddnReaderThread;
+	private final EddnBufferThread eddnBufferThread;
 	private final CommanderData commanderData;
 	private final Map<String, OtherCommanderLocation> otherCommanders;
 
@@ -57,12 +59,12 @@ public class SidePanelFrame extends JFrame implements WindowListener, JournalUpd
 	private DiscoveryPanel discoveryPanel = null;
 	private JTabbedPane tabbedPane = null;
 
-	public SidePanelFrame(String title, ApplicationContext appctx, CommanderData commanderData, Map<String, OtherCommanderLocation> otherCommanders)
-			throws HeadlessException {
+	public SidePanelFrame(String title, ApplicationContext appctx, CommanderData commanderData, Map<String, OtherCommanderLocation> otherCommanders) throws HeadlessException {
 		super(title);
 
 		this.journalReaderThread = appctx.getBean(JournalReaderThread.class);
 		this.eddnReaderThread = appctx.getBean(EddnReaderThread.class);
+		this.eddnBufferThread = appctx.getBean(EddnBufferThread.class);
 		this.commanderData = commanderData;
 		this.otherCommanders = otherCommanders;
 
@@ -85,7 +87,8 @@ public class SidePanelFrame extends JFrame implements WindowListener, JournalUpd
 	public void windowOpened(WindowEvent e) {
 		this.journalReaderThread.addListener(this);
 		this.journalReaderThread.start();
-		this.eddnReaderThread.addListener(this);
+		this.eddnBufferThread.addListener(this);
+		this.eddnBufferThread.start();
 		this.eddnReaderThread.start();
 
 		this.statusPanel.updateFromCommanderData(this.commanderData);

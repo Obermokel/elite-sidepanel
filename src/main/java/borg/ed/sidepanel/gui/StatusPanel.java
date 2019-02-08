@@ -1,12 +1,13 @@
 package borg.ed.sidepanel.gui;
 
+import borg.ed.galaxy.constants.Allegiance;
+import borg.ed.galaxy.constants.Economy;
+import borg.ed.galaxy.constants.Government;
+import borg.ed.galaxy.constants.State;
+import borg.ed.galaxy.constants.SystemSecurity;
+import borg.ed.galaxy.data.Coord;
 import borg.ed.sidepanel.commander.CommanderData;
-import borg.ed.universe.constants.Allegiance;
-import borg.ed.universe.constants.Economy;
-import borg.ed.universe.constants.Government;
-import borg.ed.universe.constants.State;
-import borg.ed.universe.constants.SystemSecurity;
-import borg.ed.universe.data.Coord;
+
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

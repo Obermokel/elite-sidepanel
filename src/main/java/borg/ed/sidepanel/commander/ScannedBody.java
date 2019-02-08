@@ -1,11 +1,12 @@
 package borg.ed.sidepanel.commander;
 
-import borg.ed.universe.constants.PlanetClass;
-import borg.ed.universe.constants.StarClass;
 import lombok.Getter;
 import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import borg.ed.galaxy.constants.PlanetClass;
+import borg.ed.galaxy.constants.StarClass;
 
 import java.io.Serializable;
 import java.time.ZonedDateTime;
